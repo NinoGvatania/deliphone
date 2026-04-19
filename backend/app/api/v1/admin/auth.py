@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.rate_limit import rate_limit_2fa, rate_limit_admin_login
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -30,7 +31,7 @@ from app.schemas.auth import (
 router = APIRouter(prefix="/auth", tags=["admin-auth"])
 
 
-@router.post("/login", response_model=AdminLoginResponse)
+@router.post("/login", response_model=AdminLoginResponse, dependencies=[Depends(rate_limit_admin_login)])
 async def admin_login(
     body: AdminLoginRequest,
     session: AsyncSession = Depends(get_session),
@@ -48,7 +49,7 @@ async def admin_login(
     return AdminLoginResponse(temp_token=temp_token)
 
 
-@router.post("/verify-2fa", response_model=AdminAuthResponse)
+@router.post("/verify-2fa", response_model=AdminAuthResponse, dependencies=[Depends(rate_limit_2fa)])
 async def verify_2fa(
     body: AdminVerify2FARequest,
     session: AsyncSession = Depends(get_session),

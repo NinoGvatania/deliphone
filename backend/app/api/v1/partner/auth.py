@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.rate_limit import rate_limit_partner_login
 from app.core.security import create_access_token, create_refresh_token, verify_password
 from app.models.partners import PartnerUser
 from app.schemas.auth import PartnerAuthResponse, PartnerLoginRequest, PartnerUserBrief
@@ -16,7 +17,7 @@ from app.schemas.auth import PartnerAuthResponse, PartnerLoginRequest, PartnerUs
 router = APIRouter(prefix="/auth", tags=["partner-auth"])
 
 
-@router.post("/login", response_model=PartnerAuthResponse)
+@router.post("/login", response_model=PartnerAuthResponse, dependencies=[Depends(rate_limit_partner_login)])
 async def partner_login(
     body: PartnerLoginRequest,
     session: AsyncSession = Depends(get_session),

@@ -21,6 +21,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserBrief,
 )
+from app.core.rate_limit import rate_limit_telegram_auth
 from app.services.telegram_auth import verify_telegram_auth
 
 router = APIRouter(prefix="/auth", tags=["client-auth"])
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/auth", tags=["client-auth"])
 _AUTH_DATA_MAX_AGE = 86400  # 24 hours
 
 
-@router.post("/telegram", response_model=ClientAuthResponse)
+@router.post("/telegram", response_model=ClientAuthResponse, dependencies=[Depends(rate_limit_telegram_auth)])
 async def auth_telegram(
     body: TelegramAuthRequest,
     session: AsyncSession = Depends(get_session),
