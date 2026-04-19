@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.crypto import EncryptedString
 from app.models.base import Base, TimestampMixin, uuid_pk
 
 
@@ -45,12 +46,15 @@ class User(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(32), default="active", server_default="active")
     blocked_reason: Mapped[str | None] = mapped_column(Text)
 
-    # KYC fields (encrypted at application level)
-    full_name: Mapped[str | None] = mapped_column(Text)
+    # KYC fields (AES-256-GCM encrypted at application level via EncryptedString)
+    full_name: Mapped[str | None] = mapped_column(EncryptedString(255))
     birth_date: Mapped[date | None] = mapped_column(Date)
-    passport_series: Mapped[str | None] = mapped_column(String(64))
-    passport_number: Mapped[str | None] = mapped_column(String(64))
+    passport_series: Mapped[str | None] = mapped_column(EncryptedString(255))
+    passport_number: Mapped[str | None] = mapped_column(EncryptedString(255))
     passport_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    passport_issued_by: Mapped[str | None] = mapped_column(EncryptedString(255))
+    passport_issue_date: Mapped[str | None] = mapped_column(EncryptedString(64))
+    registration_address: Mapped[str | None] = mapped_column(EncryptedString(512))
 
     no_show_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     total_rentals: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
@@ -93,6 +97,11 @@ class KycSubmission(Base):
     )
     reviewer_comment: Mapped[str | None] = mapped_column(Text)
     rejection_reason: Mapped[str | None] = mapped_column(Text)
+    consents: Mapped[dict | None] = mapped_column(JSONB)
+    resubmit_requested_files: Mapped[dict | None] = mapped_column(JSONB)
+    previous_submission_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("kyc_submissions.id")
+    )
     submitted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     reviewed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
