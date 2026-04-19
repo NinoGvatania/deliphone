@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = Field(default="mailto:admin@deliphone.local")
 
+    # --- receipts (54-FZ) ---
+    RECEIPT_EMAIL_DOMAIN: str = "receipts.deliphone.ru"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

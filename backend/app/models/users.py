@@ -38,6 +38,7 @@ class User(TimestampMixin, Base):
     telegram_photo_url: Mapped[str | None] = mapped_column(Text)
 
     email: Mapped[str | None] = mapped_column(String(255))
+    email_for_receipts: Mapped[str | None] = mapped_column(String(255))
 
     kyc_status: Mapped[str] = mapped_column(String(32), default="none", server_default="none")
     kyc_submission_id: Mapped[uuid.UUID | None] = mapped_column(

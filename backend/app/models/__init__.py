@@ -39,6 +39,7 @@ from app.models.ops import (
 from app.models.partners import Partner, PartnerLocation, PartnerUser, RegistrationSession
 from app.models.rentals import Incident, Payment, Rental
 from app.models.users import KycSubmission, PaymentMethod, Subscription, User
+from app.models.webhooks import WebhookEvent
 
 __all__ = [
     "Base",
@@ -91,4 +92,5 @@ __all__ = [
     "SupportMessage",
     "Tariff",
     "User",
+    "WebhookEvent",
 ]
