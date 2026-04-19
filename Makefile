@@ -51,6 +51,9 @@ migration: ## Create new migration: make migration name="add_users"
 	@if [ -z "$(name)" ]; then echo "usage: make migration name=<message>"; exit 1; fi
 	$(COMPOSE) exec $(BACKEND_SVC) alembic revision --autogenerate -m "$(name)"
 
+seed: ## Load seed data (tariffs, test admin, partner)
+	$(COMPOSE) exec $(BACKEND_SVC) python -m app.cli.seed
+
 # -------- test / lint --------
 .PHONY: test test-backend test-frontend lint lint-backend lint-frontend format
 test: test-backend test-frontend ## Run all tests

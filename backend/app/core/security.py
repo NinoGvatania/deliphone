@@ -9,23 +9,22 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
+import bcrypt
 from jose import jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
 ALGORITHM = "HS256"
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 Role = Literal["client", "partner", "admin"]
 
 
 def hash_password(raw: str) -> str:
-    return _pwd_context.hash(raw)
+    return bcrypt.hashpw(raw.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(raw: str, hashed: str) -> bool:
-    return _pwd_context.verify(raw, hashed)
+    return bcrypt.checkpw(raw.encode(), hashed.encode())
 
 
 def create_access_token(
