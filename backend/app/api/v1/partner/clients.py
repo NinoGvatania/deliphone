@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.deps import get_current_partner
 from app.models.partners import PartnerUser, RegistrationSession
-from app.models.users import KycSubmission, User
+from app.models.users import KycSubmission, PaymentMethod, User
 from app.schemas.kyc import (
     CardBindingInitResponse,
     KycInitResponse,
@@ -212,9 +212,14 @@ async def partner_client_status(
 ) -> PartnerClientStatusResponse:
     user = await _verify_user_associated(user_id, partner_user, session)
 
+    pm_result = await session.execute(
+        select(PaymentMethod).where(PaymentMethod.user_id == user.id)
+    )
+    has_card = pm_result.scalars().first() is not None
+
     return PartnerClientStatusResponse(
         kyc_status=user.kyc_status,
-        card_bound=False,
+        card_bound=has_card,
     )
 
 
@@ -233,3 +238,17 @@ async def card_binding_init(
         qr_url=qr_url,
         short_token=short_token,
     )
+
+
+@router.get("/{user_id}/card-binding-status")
+async def card_binding_status(
+    user_id: uuid.UUID,
+    partner_user: PartnerUser = Depends(get_current_partner),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    await _verify_user_associated(user_id, partner_user, session)
+    result = await session.execute(
+        select(PaymentMethod).where(PaymentMethod.user_id == user_id)
+    )
+    methods = result.scalars().all()
+    return {"card_bound": len(methods) > 0, "methods_count": len(methods)}
