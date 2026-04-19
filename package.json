@@ -1,0 +1,22 @@
+{
+  "name": "deliphone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deliphone — smartphone rental service monorepo",
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint --if-present",
+    "test": "pnpm -r test --if-present",
+    "format": "pnpm -r format --if-present",
+    "typecheck": "pnpm -r typecheck --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
