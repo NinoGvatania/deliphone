@@ -131,7 +131,7 @@ function ProfileSection({
   onClick,
   disabled,
 }: {
-  icon: React.ComponentType<{ size?: number }>;
+  icon: React.ComponentType<any>;
   title: string;
   right?: React.ReactNode;
   onClick?: () => void;

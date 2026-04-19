@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppHeader, Button, Card, Badge } from "@deliphone/ui";
-import { ArrowLeft, Check, Shield, Clock, Headphones } from "lucide-react";
+import { ArrowLeft, Shield, Clock, Headphones } from "lucide-react";
 import { paymentsApi } from "@/api/payments";
 
 const BENEFITS = [
@@ -16,7 +16,7 @@ export function SubscriptionPage() {
   const queryClient = useQueryClient();
   const [showCancel, setShowCancel] = useState(false);
 
-  const { data: subscription, isLoading } = useQuery({
+  const { data: subscription } = useQuery({
     queryKey: ["subscription"],
     queryFn: () => paymentsApi.getSubscription(),
   });

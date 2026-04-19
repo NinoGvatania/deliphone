@@ -75,7 +75,7 @@ export function KycFlowPage() {
         {step === "passport_main" && initData && (
           <KycPhotoStep
             fileType="passport_main"
-            uploadUrl={initData.upload_urls.passport_main}
+            uploadUrl={initData.upload_urls["passport_main"]!}
             title="Основной разворот паспорта"
             instruction="Положи паспорт на ровную поверхность, открой на развороте с фото"
             onUploaded={() => handlePhotoUploaded("passport_main")}
@@ -84,17 +84,17 @@ export function KycFlowPage() {
         {step === "passport_reg" && initData && (
           <KycPhotoStep
             fileType="passport_reg"
-            uploadUrl={initData.upload_urls.passport_reg}
+            uploadUrl={initData.upload_urls["passport_reg"]!}
             title="Страница прописки"
             instruction="Открой паспорт на развороте с пропиской"
             onUploaded={() => handlePhotoUploaded("passport_reg")}
           />
         )}
         {step === "selfie" && initData && (
-          <KycSelfieStep uploadUrl={initData.upload_urls.selfie} onUploaded={handleSelfieUploaded} />
+          <KycSelfieStep uploadUrl={initData.upload_urls["selfie"]!} onUploaded={handleSelfieUploaded} />
         )}
         {step === "video" && initData && (
-          <KycVideoStep uploadUrl={initData.upload_urls.video} onUploaded={handleVideoUploaded} />
+          <KycVideoStep uploadUrl={initData.upload_urls["video"]!} onUploaded={handleVideoUploaded} />
         )}
         {step === "data" && <KycDataStep onCollected={handleDataCollected} />}
         {step === "consents" && initData && formData && (

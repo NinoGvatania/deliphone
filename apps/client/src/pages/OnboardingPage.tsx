@@ -31,7 +31,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const isLast = current === SLIDES.length - 1;
-  const slide = SLIDES[current];
+  const slide = SLIDES[current]!;
 
   function finish() {
     localStorage.setItem(STORAGE_KEY, "true");
