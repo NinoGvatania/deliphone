@@ -6,7 +6,7 @@ import hashlib
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +35,8 @@ CONTENT_TYPES = {
 
 
 def _s3_key(user_id: uuid.UUID, submission_id: uuid.UUID, file_name: str) -> str:
-    return f"{user_id}/{submission_id}/{file_name}.jpg" if file_name != "video" else f"{user_id}/{submission_id}/{file_name}.mp4"
+    ext = "mp4" if file_name == "video" else "jpg"
+    return f"{user_id}/{submission_id}/{file_name}.{ext}"
 
 
 def _generate_upload_urls(
@@ -56,16 +57,30 @@ async def kyc_init(
     user: User = Depends(get_current_client),
     session: AsyncSession = Depends(get_session),
 ) -> KycInitResponse:
+    # If there's already an approved or pending submission — block
     result = await session.execute(
         select(KycSubmission).where(
             KycSubmission.user_id == user.id,
-            KycSubmission.status.in_(["pending", "approved", "draft"]),
+            KycSubmission.status.in_(["pending", "approved"]),
         )
     )
-    existing = result.scalars().first()
-    if existing:
+    if result.scalars().first():
         raise HTTPException(409, "active KYC submission already exists")
 
+    # If there's a draft — reuse it (generate fresh upload URLs)
+    draft_result = await session.execute(
+        select(KycSubmission).where(
+            KycSubmission.user_id == user.id,
+            KycSubmission.status == "draft",
+        ).order_by(KycSubmission.created_at.desc())
+    )
+    existing_draft = draft_result.scalars().first()
+
+    if existing_draft:
+        upload_urls = _generate_upload_urls(user.id, existing_draft.id)
+        return KycInitResponse(submission_id=existing_draft.id, upload_urls=upload_urls)
+
+    # Create new draft
     submission = KycSubmission(
         user_id=user.id,
         status="draft",
@@ -78,6 +93,37 @@ async def kyc_init(
     await session.commit()
 
     return KycInitResponse(submission_id=submission.id, upload_urls=upload_urls)
+
+
+@router.post("/upload")
+async def kyc_upload_file(
+    file: UploadFile,
+    submission_id: str = Query(...),
+    file_type: str = Query(...),
+    user: User = Depends(get_current_client),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Proxy upload: browser → backend → S3 (avoids CORS/network issues)."""
+    if file_type not in FILE_KEYS:
+        raise HTTPException(422, f"file_type must be one of {FILE_KEYS}")
+
+    result = await session.execute(
+        select(KycSubmission).where(
+            KycSubmission.id == submission_id,
+            KycSubmission.user_id == user.id,
+            KycSubmission.status == "draft",
+        )
+    )
+    if not result.scalars().first():
+        raise HTTPException(404, "draft submission not found")
+
+    storage = get_storage()
+    s3_key = _s3_key(user.id, uuid.UUID(submission_id), file_type)
+    data = await file.read()
+    ct = CONTENT_TYPES.get(file_type, "application/octet-stream")
+    storage.upload_file(KYC_BUCKET, s3_key, data, content_type=ct)
+
+    return {"uploaded": True, "key": s3_key}
 
 
 @router.post("/submit", response_model=KycSubmitResponse)
@@ -139,8 +185,6 @@ async def kyc_submit(
     await notify_kyc_submitted(session, user)
     await session.commit()
 
-    # TODO: process_kyc_submission.delay(str(submission.id)) — celery task not yet created
-
     return KycSubmitResponse(status="pending")
 
 
@@ -169,6 +213,7 @@ async def kyc_resubmit(
     await session.flush()
 
     upload_urls = _generate_upload_urls(user.id, submission.id)
+    user.kyc_status = "none"
     await session.commit()
 
     return KycInitResponse(submission_id=submission.id, upload_urls=upload_urls)
