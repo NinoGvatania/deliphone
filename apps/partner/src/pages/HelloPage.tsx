@@ -1,6 +1,12 @@
 import { PackageCheck, PackageOpen, UserPlus } from "lucide-react";
-import { Badge, Button, Card, brand } from "@deliphone/ui";
+import { AppHeader, Button, Card, Logo } from "@deliphone/ui";
 
+/**
+ * Главный экран партнёрского кабинета (SPEC §6.3).
+ *  - Sticky top bar: Logo слева, точка + оператор справа, без переноса
+ *  - Блок «Сейчас» — 3 stat-карточки
+ *  - Блок действий — 3 большие кнопки: выдать / принять / зарегистрировать
+ */
 const stats = {
   awaitingIssue: 0,
   awaitingReturn: 0,
@@ -8,34 +14,34 @@ const stats = {
   availableDevices: 5,
 };
 
+const operator = { point: "ул. Примерная, 12", name: "Иван И." };
+
 export function HelloPage() {
   return (
-    <main className="min-h-full bg-ink-50 px-24 py-32 lg:px-48 lg:py-64">
-      <div className="max-w-[1024px] mx-auto flex flex-col gap-24">
-        <Header />
-        <StatsBlock />
-        <Actions />
-      </div>
-    </main>
-  );
-}
+    <div className="min-h-full flex flex-col bg-ink-50">
+      <AppHeader
+        sticky
+        paddingInline={24}
+        left={<Logo size="md" />}
+        right={
+          <div className="flex items-center gap-8 body-sm text-ink-500 whitespace-nowrap">
+            <span className="truncate max-w-[260px]">{operator.point}</span>
+            <span
+              aria-hidden
+              className="inline-block w-3 h-3 rounded-full bg-ink-300 shrink-0"
+            />
+            <span className="truncate max-w-[140px]">{operator.name}</span>
+          </div>
+        }
+      />
 
-function Header() {
-  return (
-    <header className="flex items-center justify-between gap-16 flex-wrap">
-      <div className="flex items-center gap-12">
-        <span className="inline-flex items-center justify-center w-40 h-40 rounded-full bg-accent text-accent-ink">
-          <span className="h2 leading-none font-bold">Д</span>
-        </span>
-        <div>
-          <div className="h2 m-0">{brand.name}</div>
-          <div className="body-sm text-ink-500">Точка · ул. Примерная, 12 · оператор Иван И.</div>
+      <main className="flex-1 px-24 py-24 lg:px-48 lg:py-32">
+        <div className="max-w-[1024px] mx-auto flex flex-col gap-24">
+          <StatsBlock />
+          <Actions />
         </div>
-      </div>
-      <Badge variant="soft" size="lg">
-        partner · v0.1
-      </Badge>
-    </header>
+      </main>
+    </div>
   );
 }
 
