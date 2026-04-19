@@ -3,6 +3,8 @@
 from fastapi import APIRouter
 
 from app.api.v1.partner.auth import router as auth_router
+from app.api.v1.partner.registrations import router as registrations_router
 
 router = APIRouter(prefix="/partner", tags=["partner"])
 router.include_router(auth_router)
+router.include_router(registrations_router)
