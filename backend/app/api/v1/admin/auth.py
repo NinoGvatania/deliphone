@@ -76,8 +76,8 @@ async def verify_2fa(
     if not totp.verify(body.totp_code, valid_window=1):
         raise HTTPException(status_code=401, detail="invalid TOTP code")
 
-    async with session.begin():
-        admin.last_login_at = datetime.now(UTC)
+    admin.last_login_at = datetime.now(UTC)
+    await session.commit()
 
     access = create_access_token(
         str(admin.id), "admin", extra_claims={"admin_role": admin.role}

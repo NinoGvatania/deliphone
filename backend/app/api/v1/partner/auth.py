@@ -33,8 +33,8 @@ async def partner_login(
     if not user.is_active:
         raise HTTPException(status_code=403, detail="account deactivated")
 
-    async with session.begin():
-        user.last_login_at = datetime.now(UTC)
+    user.last_login_at = datetime.now(UTC)
+    await session.commit()
 
     access = create_access_token(str(user.id), "partner")
     refresh = create_refresh_token(str(user.id), "partner")

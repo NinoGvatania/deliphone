@@ -6,7 +6,7 @@ Run via:  make seed
 Seeds:
 - 1 tariff: Стандарт посуточно (349 ₽ / 24 h)
 - 16 damage_pricing rows for Xiaomi Redmi A5 (SPEC §10.11)
-- 1 admin user with known TOTP secret (admin@deliphone.local)
+- 1 admin user with known TOTP secret (admin@deliphone.dev)
 - 1 partner + 1 operator + 1 location in Moscow
 """
 
@@ -19,7 +19,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.db import SessionLocal, engine
+from app.core.db import _get_session_factory
 from app.core.security import hash_password
 from app.models import (
     AdminUser,
@@ -32,7 +32,7 @@ from app.models import (
 
 # ---------- constants ----------
 
-SEED_ADMIN_EMAIL = "admin@deliphone.local"
+SEED_ADMIN_EMAIL = "admin@deliphone.dev"
 SEED_ADMIN_PASSWORD = "admin123"
 # Deterministic TOTP secret so dev / CI can generate valid codes:
 #   pyotp.TOTP(SEED_ADMIN_TOTP_SECRET).now()
@@ -62,7 +62,7 @@ DAMAGE_PRICING_ROWS: list[tuple[str, str | None, float]] = [
 
 
 async def seed() -> None:
-    async with SessionLocal() as session:
+    async with _get_session_factory()() as session:
         # --- Tariff ---
         existing = await session.execute(
             select(Tariff).where(Tariff.name == "Стандарт посуточно")

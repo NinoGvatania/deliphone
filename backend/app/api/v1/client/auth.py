@@ -41,39 +41,40 @@ async def auth_telegram(
     if int(time.time()) - body.auth_date > _AUTH_DATA_MAX_AGE:
         raise HTTPException(status_code=401, detail="auth data expired")
 
-    async with session.begin():
-        result = await session.execute(
-            select(User).where(User.telegram_id == body.id)
+    result = await session.execute(
+        select(User).where(User.telegram_id == body.id)
+    )
+    user = result.scalars().first()
+
+    if user is None:
+        user = User(
+            telegram_id=body.id,
+            telegram_username=body.username,
+            telegram_first_name=body.first_name,
+            telegram_last_name=body.last_name,
+            telegram_photo_url=body.photo_url,
         )
-        user = result.scalars().first()
+        session.add(user)
+        await session.flush()
+    else:
+        user.telegram_username = body.username
+        user.telegram_first_name = body.first_name
+        user.telegram_last_name = body.last_name
+        user.telegram_photo_url = body.photo_url
 
-        if user is None:
-            user = User(
-                telegram_id=body.id,
-                telegram_username=body.username,
-                telegram_first_name=body.first_name,
-                telegram_last_name=body.last_name,
-                telegram_photo_url=body.photo_url,
+    if body.reg_session_id is not None:
+        reg_result = await session.execute(
+            select(RegistrationSession).where(
+                RegistrationSession.id == body.reg_session_id,
+                RegistrationSession.status == "pending",
             )
-            session.add(user)
-            await session.flush()
-        else:
-            user.telegram_username = body.username
-            user.telegram_first_name = body.first_name
-            user.telegram_last_name = body.last_name
-            user.telegram_photo_url = body.photo_url
+        )
+        reg_session = reg_result.scalars().first()
+        if reg_session is not None:
+            reg_session.attached_user_id = user.id
+            reg_session.status = "attached"
 
-        if body.reg_session_id is not None:
-            reg_result = await session.execute(
-                select(RegistrationSession).where(
-                    RegistrationSession.id == body.reg_session_id,
-                    RegistrationSession.status == "pending",
-                )
-            )
-            reg_session = reg_result.scalars().first()
-            if reg_session is not None:
-                reg_session.attached_user_id = user.id
-                reg_session.status = "attached"
+    await session.commit()
 
     access = create_access_token(str(user.id), "client")
     refresh = create_refresh_token(str(user.id), "client")

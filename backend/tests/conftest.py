@@ -10,39 +10,59 @@ import redis.asyncio as aioredis
 from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
-from app.main import app
 
 TEST_BOT_TOKEN = "test-bot-token-12345"
 
 
-@pytest.fixture
-async def client() -> AsyncIterator[AsyncClient]:
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    import asyncio
+    return asyncio.DefaultEventLoopPolicy()
 
 
-@pytest.fixture
-def monkeypatch_settings(monkeypatch: pytest.MonkeyPatch):
-    """Set TG_BOT_TOKEN on the global settings object for the duration of the test."""
+@pytest.fixture(scope="session", autouse=True)
+def _patch_bot_token():
+    """Set TG_BOT_TOKEN on the global settings for the whole session."""
+    original = settings.TG_BOT_TOKEN
+    settings.__dict__["TG_BOT_TOKEN"] = TEST_BOT_TOKEN
+    yield
+    settings.__dict__["TG_BOT_TOKEN"] = original
+
+
+@pytest.fixture(autouse=True)
+def _monkeypatch_tg_token(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(settings, "TG_BOT_TOKEN", TEST_BOT_TOKEN)
 
 
 @pytest.fixture
-async def redis_cleanup():
-    """Flush rate-limit keys that share the current minute bucket after the test."""
+async def client() -> AsyncIterator[AsyncClient]:
+    # Reset the lazy engine so it binds to the current event loop.
+    import app.core.db as db_mod
+    db_mod._engine = None
+    db_mod._session_factory = None
+
+    from app.main import app
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+    # Dispose engine after test to avoid connection leaks.
+    if db_mod._engine is not None:
+        await db_mod._engine.dispose()
+        db_mod._engine = None
+        db_mod._session_factory = None
+
+
+@pytest.fixture(autouse=True)
+async def _redis_cleanup():
+    """Flush rate-limit keys for the current minute after each test."""
     yield
-    r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     try:
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
         bucket = int(time.time() // 60)
-        patterns = [
-            f"rl:tg_auth:*:{bucket}",
-            f"rl:partner_login:*:{bucket}",
-            f"rl:admin_login:*:{bucket}",
-            f"rl:2fa:*:{bucket}",
-        ]
-        for pat in patterns:
-            async for key in r.scan_iter(match=pat):
+        for prefix in ("rl:tg_auth", "rl:partner_login", "rl:admin_login", "rl:2fa"):
+            async for key in r.scan_iter(match=f"{prefix}:*:{bucket}"):
                 await r.delete(key)
-    finally:
         await r.aclose()
+    except Exception:
+        pass

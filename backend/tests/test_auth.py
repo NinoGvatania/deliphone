@@ -14,8 +14,7 @@ from app.cli.seed import (
     SEED_ADMIN_PASSWORD,
     SEED_ADMIN_TOTP_SECRET,
     SEED_PARTNER_OPERATOR_EMAIL,
-    SEED_PARTNER_OPERATOR_PASSWORD,
-)
+    SEED_PARTNER_OPERATOR_PASSWORD)
 from app.services.telegram_auth import verify_telegram_auth
 
 TEST_BOT_TOKEN = "test-bot-token-12345"
@@ -59,7 +58,7 @@ def test_telegram_auth_verify_invalid_hash():
 # ---------------------------------------------------------------------------
 
 
-async def test_telegram_auth_verify_expired(client: AsyncClient, monkeypatch_settings, redis_cleanup):
+async def test_telegram_auth_verify_expired(client: AsyncClient):
     data = _make_telegram_auth(TEST_BOT_TOKEN, telegram_id=900000001, auth_date=int(time.time()) - 90000)
     resp = await client.post("/api/v1/client/auth/telegram", json=data)
     assert resp.status_code == 401
@@ -71,7 +70,7 @@ async def test_telegram_auth_verify_expired(client: AsyncClient, monkeypatch_set
 # ---------------------------------------------------------------------------
 
 
-async def test_client_auth_telegram_new_user(client: AsyncClient, monkeypatch_settings, redis_cleanup):
+async def test_client_auth_telegram_new_user(client: AsyncClient):
     data = _make_telegram_auth(TEST_BOT_TOKEN, telegram_id=100000001)
     resp = await client.post("/api/v1/client/auth/telegram", json=data)
     assert resp.status_code == 200
@@ -86,7 +85,7 @@ async def test_client_auth_telegram_new_user(client: AsyncClient, monkeypatch_se
 # ---------------------------------------------------------------------------
 
 
-async def test_client_auth_telegram_existing_user(client: AsyncClient, monkeypatch_settings, redis_cleanup):
+async def test_client_auth_telegram_existing_user(client: AsyncClient):
     tg_id = 100000002
     data1 = _make_telegram_auth(TEST_BOT_TOKEN, telegram_id=tg_id, first_name="Alice")
     resp1 = await client.post("/api/v1/client/auth/telegram", json=data1)
@@ -106,11 +105,10 @@ async def test_client_auth_telegram_existing_user(client: AsyncClient, monkeypat
 # ---------------------------------------------------------------------------
 
 
-async def test_partner_auth_login(client: AsyncClient, redis_cleanup):
+async def test_partner_auth_login(client: AsyncClient):
     resp = await client.post(
         "/api/v1/partner/auth/login",
-        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": SEED_PARTNER_OPERATOR_PASSWORD},
-    )
+        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": SEED_PARTNER_OPERATOR_PASSWORD})
     assert resp.status_code == 200
     body = resp.json()
     assert "access_token" in body
@@ -122,11 +120,10 @@ async def test_partner_auth_login(client: AsyncClient, redis_cleanup):
 # ---------------------------------------------------------------------------
 
 
-async def test_partner_auth_login_invalid(client: AsyncClient, redis_cleanup):
+async def test_partner_auth_login_invalid(client: AsyncClient):
     resp = await client.post(
         "/api/v1/partner/auth/login",
-        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong-password"},
-    )
+        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong-password"})
     assert resp.status_code == 401
 
 
@@ -135,19 +132,17 @@ async def test_partner_auth_login_invalid(client: AsyncClient, redis_cleanup):
 # ---------------------------------------------------------------------------
 
 
-async def test_admin_auth_2fa_flow(client: AsyncClient, redis_cleanup):
+async def test_admin_auth_2fa_flow(client: AsyncClient):
     resp1 = await client.post(
         "/api/v1/admin/auth/login",
-        json={"email": SEED_ADMIN_EMAIL, "password": SEED_ADMIN_PASSWORD},
-    )
+        json={"email": SEED_ADMIN_EMAIL, "password": SEED_ADMIN_PASSWORD})
     assert resp1.status_code == 200
     temp_token = resp1.json()["temp_token"]
 
     totp_code = pyotp.TOTP(SEED_ADMIN_TOTP_SECRET).now()
     resp2 = await client.post(
         "/api/v1/admin/auth/verify-2fa",
-        json={"temp_token": temp_token, "totp_code": totp_code},
-    )
+        json={"temp_token": temp_token, "totp_code": totp_code})
     assert resp2.status_code == 200
     body = resp2.json()
     assert "access_token" in body
@@ -159,17 +154,15 @@ async def test_admin_auth_2fa_flow(client: AsyncClient, redis_cleanup):
 # ---------------------------------------------------------------------------
 
 
-async def test_admin_auth_2fa_wrong_code(client: AsyncClient, redis_cleanup):
+async def test_admin_auth_2fa_wrong_code(client: AsyncClient):
     resp1 = await client.post(
         "/api/v1/admin/auth/login",
-        json={"email": SEED_ADMIN_EMAIL, "password": SEED_ADMIN_PASSWORD},
-    )
+        json={"email": SEED_ADMIN_EMAIL, "password": SEED_ADMIN_PASSWORD})
     temp_token = resp1.json()["temp_token"]
 
     resp2 = await client.post(
         "/api/v1/admin/auth/verify-2fa",
-        json={"temp_token": temp_token, "totp_code": "000000"},
-    )
+        json={"temp_token": temp_token, "totp_code": "000000"})
     assert resp2.status_code == 401
 
 
@@ -188,7 +181,7 @@ async def test_jwt_middleware_client_protects(client: AsyncClient):
 # ---------------------------------------------------------------------------
 
 
-async def test_jwt_middleware_client_accepts(client: AsyncClient, monkeypatch_settings, redis_cleanup):
+async def test_jwt_middleware_client_accepts(client: AsyncClient):
     tg_data = _make_telegram_auth(TEST_BOT_TOKEN, telegram_id=100000011)
     auth_resp = await client.post("/api/v1/client/auth/telegram", json=tg_data)
     assert auth_resp.status_code == 200
@@ -204,7 +197,7 @@ async def test_jwt_middleware_client_accepts(client: AsyncClient, monkeypatch_se
 # ---------------------------------------------------------------------------
 
 
-async def test_rate_limit_telegram_auth(client: AsyncClient, monkeypatch_settings, redis_cleanup):
+async def test_rate_limit_telegram_auth(client: AsyncClient):
     for i in range(10):
         data = _make_telegram_auth(TEST_BOT_TOKEN, telegram_id=200000000 + i)
         resp = await client.post("/api/v1/client/auth/telegram", json=data)
@@ -220,16 +213,14 @@ async def test_rate_limit_telegram_auth(client: AsyncClient, monkeypatch_setting
 # ---------------------------------------------------------------------------
 
 
-async def test_rate_limit_partner_login(client: AsyncClient, redis_cleanup):
+async def test_rate_limit_partner_login(client: AsyncClient):
     for i in range(5):
         resp = await client.post(
             "/api/v1/partner/auth/login",
-            json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong"},
-        )
+            json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong"})
         assert resp.status_code in (401, 200), f"call {i+1} unexpected {resp.status_code}"
 
     resp = await client.post(
         "/api/v1/partner/auth/login",
-        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong"},
-    )
+        json={"email": SEED_PARTNER_OPERATOR_EMAIL, "password": "wrong"})
     assert resp.status_code == 429
