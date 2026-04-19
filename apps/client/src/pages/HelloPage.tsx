@@ -1,34 +1,34 @@
-import { DelifonTokens } from "@deliphone/shared-types/tokens";
+import { ArrowRight } from "lucide-react";
+import { AppHeader, Button, Logo } from "@deliphone/ui";
 
+/**
+ * Онбординг клиента (SPEC §5.3, первый запуск).
+ * Будет разбит на 3 шага в Фазе 2 — пока один экран со стартом.
+ */
 export function HelloPage() {
   return (
-    <main className="min-h-full grid place-items-center bg-ink-50 px-16 py-32">
-      <section className="w-full max-w-[480px] rounded-2xl bg-ink-0 shadow-elev-2 p-24 sm:p-32">
-        <span
-          className="inline-block bg-accent text-accent-ink rounded-full font-sans caption px-12 py-4 font-semibold"
-          style={{ letterSpacing: "0.01em" }}
-        >
-          {DelifonTokens.brand.name} · v0.1
-        </span>
-        <h1 className="mt-16 h1 font-sans text-ink-900">Hello Deliphone client</h1>
-        <p className="mt-8 body-lg text-ink-500 font-sans">
-          {DelifonTokens.brand.tagline}
-        </p>
-        <div className="mt-24 flex items-center gap-8">
-          <button
-            type="button"
-            className="h-44 px-18 rounded-full bg-accent text-accent-ink font-sans font-semibold shadow-elev-1 hover:bg-[#C3EB2A] active:bg-[#AED41A] transition-[background-color] duration-[120ms]"
-          >
-            Начать
-          </button>
-          <button
-            type="button"
-            className="h-44 px-18 rounded-full bg-transparent border-[1.5px] border-ink-200 text-ink-900 font-sans font-semibold"
-          >
-            Уже есть аккаунт
-          </button>
-        </div>
-      </section>
-    </main>
+    <div className="min-h-full flex flex-col bg-ink-50">
+      <AppHeader left={<Logo size="md" />} />
+
+      <main className="flex-1 flex items-center justify-center px-20 py-32">
+        <section className="w-full max-w-[440px] flex flex-col gap-24">
+          <header>
+            <h1 className="h1 m-0 text-ink-900">Арендуй рабочий смартфон</h1>
+            <p className="body-lg text-ink-500 mt-12 m-0">
+              От 349 ₽ в сутки. Забирай в ближайшей точке, сдавай где удобно.
+            </p>
+          </header>
+
+          <div className="flex flex-col gap-12">
+            <Button variant="primary" size="lg" iconRight={ArrowRight} fullWidth>
+              Начать
+            </Button>
+            <Button variant="link" size="lg">
+              Уже есть аккаунт
+            </Button>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }

@@ -20,10 +20,13 @@ dependencies = [
     "redis>=5.2",
     "structlog>=24.4",
     "python-jose[cryptography]>=3.3",
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.2",
     "httpx>=0.28",
     "boto3>=1.35",
     "geoalchemy2>=0.15",
+    "pyotp>=2.9",
+    "cryptography>=43",
+    "email-validator>=2.2",
 ]
 
 [project.optional-dependencies]
@@ -35,6 +38,7 @@ dev = [
     "mypy>=1.13",
     "types-python-jose",
     "types-passlib",
+    "freezegun>=1.5",
 ]
 
 [tool.uv]
@@ -84,6 +88,7 @@ init_typed = true
 # ---------------- pytest ----------------
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     )
 
     # --- runtime ---
-    ENV: Literal["local", "dev", "staging", "production"] = "local"
+    ENV: Literal["local", "dev", "staging", "production", "test"] = "local"
     LOG_LEVEL: str = "INFO"
 
     # --- database ---
@@ -45,10 +45,19 @@ class Settings(BaseSettings):
     S3_BUCKET: str = "deliphone"
     S3_REGION: str = "ru-central-1"
 
-    # --- auth ---
+    # --- auth / JWT ---
     JWT_SECRET: str = "change-me"
-    JWT_ACCESS_TTL: int = 900  # 15 min (§7.2)
-    JWT_REFRESH_TTL: int = 604800  # 7 days
+    JWT_ACCESS_TTL_MINUTES: int = 15
+    JWT_REFRESH_TTL_DAYS: int = 30
+    JWT_TEMP_TTL_MINUTES: int = 5
+
+    # --- Telegram bot ---
+    TG_BOT_TOKEN: str = ""
+    TG_BOT_USERNAME: str = ""
+    TG_BOT_DRY_RUN: bool = True
+
+    # --- KYC encryption (32-byte base64 key) ---
+    KYC_ENCRYPTION_KEY: str = ""
 
     # --- CORS ---
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175"
@@ -61,8 +70,6 @@ class Settings(BaseSettings):
     YOOKASSA_SHOP_ID: str = ""
     YOOKASSA_SECRET_KEY: str = ""
     YOOKASSA_WEBHOOK_SECRET: str = ""
-    SMS_PROVIDER: str = "smsru"
-    SMS_PROVIDER_KEY: str = ""
     VAPID_PUBLIC_KEY: str = ""
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = Field(default="mailto:admin@deliphone.local")

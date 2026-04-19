@@ -1,0 +1,89 @@
+/**
+ * Делифон design system — global CSS variables + base resets.
+ *
+ * Import this file once per app (usually in src/main.tsx or a root CSS
+ * file). Fonts are loaded via <link> in index.html — see README.
+ */
+
+:root {
+  --ink-0: #ffffff;
+  --ink-50: #f7f7f6;
+  --ink-100: #efefed;
+  --ink-200: #e3e3df;
+  --ink-300: #cfcfc9;
+  --ink-400: #9c9c95;
+  --ink-500: #6b6b65;
+  --ink-600: #4a4a46;
+  --ink-700: #2e2e2c;
+  --ink-800: #1c1c1b;
+  --ink-900: #0f0f0e;
+
+  --accent: #d6ff3d;
+  --accent-hover: #c3eb2a;
+  --accent-press: #aed41a;
+  --accent-ink: #0f1410;
+  --accent-soft: #f1ffb5;
+
+  --success: #1e8e4f;
+  --success-bg: #e6f5ed;
+  --success-ink: #0b3c22;
+  --warning: #b8730a;
+  --warning-bg: #fbefd9;
+  --warning-ink: #4a2e04;
+  --danger: #d2342a;
+  --danger-bg: #fbe6e4;
+  --danger-ink: #5a100b;
+  --info: #1e64d2;
+  --info-bg: #e3eefb;
+  --info-ink: #0a2a5e;
+
+  --font-sans: "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --shadow-1: 0 1px 2px rgba(15, 15, 14, 0.04), 0 0 0 1px rgba(15, 15, 14, 0.04);
+  --shadow-2: 0 4px 12px rgba(15, 15, 14, 0.06), 0 0 0 1px rgba(15, 15, 14, 0.04);
+  --shadow-3: 0 12px 32px rgba(15, 15, 14, 0.1), 0 0 0 1px rgba(15, 15, 14, 0.04);
+  --shadow-4: 0 24px 56px rgba(15, 15, 14, 0.18), 0 0 0 1px rgba(15, 15, 14, 0.06);
+
+  --motion-fast: 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-base: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-slow: 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-spring: 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--ink-0);
+  color: var(--ink-900);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink-200);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-500);
+}
