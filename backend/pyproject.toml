@@ -24,6 +24,9 @@ dependencies = [
     "httpx>=0.28",
     "boto3>=1.35",
     "geoalchemy2>=0.15",
+    "pyotp>=2.9",
+    "cryptography>=43",
+    "email-validator>=2.2",
 ]
 
 [project.optional-dependencies]
@@ -35,6 +38,7 @@ dev = [
     "mypy>=1.13",
     "types-python-jose",
     "types-passlib",
+    "freezegun>=1.5",
 ]
 
 [tool.uv]
