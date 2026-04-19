@@ -1,0 +1,19 @@
+{
+  "name": "@deliphone/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared TypeScript types and Делифон design tokens",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

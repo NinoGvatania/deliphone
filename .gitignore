@@ -1,0 +1,61 @@
+# ===== Environment =====
+.env
+.env.local
+.env.*.local
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.venv/
+venv/
+.python-version
+
+# ===== Node =====
+node_modules/
+dist/
+build/
+.turbo/
+.next/
+.vite/
+*.tsbuildinfo
+.pnpm-store/
+
+# ===== Frontend PWA =====
+apps/*/dev-dist/
+apps/*/public/sw.js
+apps/*/public/workbox-*.js
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Editors =====
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+*.swp
+*.swo
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Local data =====
+data/
+uploads/
+tmp/
