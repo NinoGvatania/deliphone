@@ -1,2 +1,17 @@
-// Components land here in the next commit — Button, Card, Badge, Input, Icon.
-export {};
+export { Button } from "./Button.js";
+export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button.js";
+
+export { Card } from "./Card.js";
+export type { CardProps, CardVariant } from "./Card.js";
+
+export { Badge } from "./Badge.js";
+export type { BadgeProps, BadgeVariant, BadgeSize } from "./Badge.js";
+
+export { Input } from "./Input.js";
+export type { InputProps } from "./Input.js";
+
+export { Icon } from "./Icon.js";
+export type { IconProps, LucideIcon } from "./Icon.js";
+
+export { Spinner } from "./Spinner.js";
+export type { SpinnerProps } from "./Spinner.js";
