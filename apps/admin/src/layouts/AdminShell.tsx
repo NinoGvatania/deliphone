@@ -1,18 +1,17 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { Badge, Layout, Menu } from "antd";
+import { useMemo, useState } from "react";
+import { Layout, Menu } from "antd";
 import type { MenuProps } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@deliphone/ui";
 import { colors } from "@deliphone/ui/tokens";
 import { NAV } from "@/nav";
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 /**
- * Admin layout shell — Sider with nav, minimal top bar, content via
- * `<Outlet/>`. Sidebar active state is driven by the real URL via
- * useLocation, so navigating (from anywhere) always keeps the right item
- * highlighted.
+ * Admin layout shell — Sider with nav, content via `<Outlet/>`.
+ * Sidebar active state is driven by the real URL via useLocation, so
+ * navigating (from anywhere) always keeps the right item highlighted.
  */
 export function AdminShell() {
   const [collapsed, setCollapsed] = useState(false);
@@ -67,17 +66,6 @@ export function AdminShell() {
       </Sider>
 
       <Layout>
-        <Header style={headerStyle}>
-          <span />
-          <Badge
-            count="v0.1"
-            style={{
-              backgroundColor: colors.accent.DEFAULT,
-              color: colors.accent.ink,
-              fontWeight: 600,
-            }}
-          />
-        </Header>
         <Content style={{ padding: 24, maxWidth: 1200, margin: "0 auto", width: "100%" }}>
           <Outlet />
         </Content>
@@ -85,13 +73,3 @@ export function AdminShell() {
     </Layout>
   );
 }
-
-const headerStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingInline: 24,
-  height: 56,
-  lineHeight: "56px",
-  borderBottom: `1px solid ${colors.ink[800]}`,
-};
