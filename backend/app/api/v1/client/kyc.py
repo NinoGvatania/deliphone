@@ -75,6 +75,7 @@ async def kyc_init(
     await session.flush()
 
     upload_urls = _generate_upload_urls(user.id, submission.id)
+    await session.commit()
 
     return KycInitResponse(submission_id=submission.id, upload_urls=upload_urls)
 
@@ -168,6 +169,7 @@ async def kyc_resubmit(
     await session.flush()
 
     upload_urls = _generate_upload_urls(user.id, submission.id)
+    await session.commit()
 
     return KycInitResponse(submission_id=submission.id, upload_urls=upload_urls)
 

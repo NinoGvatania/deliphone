@@ -97,6 +97,7 @@ async def partner_kyc_init(
         upload_urls[key] = storage.generate_upload_url(
             KYC_BUCKET, s3_key, content_type=CONTENT_TYPES[key],
         )
+    await session.commit()
 
     return KycInitResponse(submission_id=submission.id, upload_urls=upload_urls)
 

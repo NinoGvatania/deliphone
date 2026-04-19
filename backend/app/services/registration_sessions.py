@@ -29,10 +29,21 @@ async def create_session(
     partner_user: PartnerUser,
 ) -> RegistrationSession:
     """Create a new pending registration session for the partner's location."""
+    from app.models.partners import PartnerLocation
+
+    loc_result = await session.execute(
+        select(PartnerLocation).where(
+            PartnerLocation.partner_id == partner_user.partner_id,
+        )
+    )
+    location = loc_result.scalars().first()
+    if not location:
+        raise ValueError("partner has no locations")
+
     reg = RegistrationSession(
         partner_id=partner_user.partner_id,
         partner_user_id=partner_user.id,
-        location_id=partner_user.partner_id,  # simplified; real impl uses location from context
+        location_id=location.id,
         status="pending",
         expires_at=datetime.now(UTC) + timedelta(minutes=SESSION_TTL_MINUTES),
     )
