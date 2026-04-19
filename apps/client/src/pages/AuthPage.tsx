@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Logo, Card } from "@deliphone/ui";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Logo, Card, Spinner } from "@deliphone/ui";
 import { MessageCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/api/client";
@@ -10,33 +10,71 @@ const TG_BOT = import.meta.env.VITE_TG_BOT_USERNAME || "DeliphoneBot";
 export function AuthPage() {
   const navigate = useNavigate();
   const { sessionId } = useParams<{ sessionId?: string }>();
+  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const isAuth = useAuthStore((s) => s.isAuthenticated)();
+  const user = useAuthStore((s) => s.user);
   const widgetRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const scriptAdded = useRef(false);
 
+  // If already logged in — redirect immediately
   useEffect(() => {
-    // Global callback for the Telegram Login Widget
-    (window as any).onTelegramAuth = async (tgUser: any) => {
-      try {
-        const body = { ...tgUser, reg_session_id: sessionId || undefined };
-        const res = await api.post<any>("/client/auth/telegram", body);
-        setAuth(res);
+    if (isAuth && user) {
+      redirectByKycStatus(user.kyc_status);
+    }
+  }, [isAuth, user]);
 
-        if (sessionId) {
-          navigate("/auth/reg-success");
-          return;
-        }
+  function redirectByKycStatus(status: string) {
+    if (status === "approved") navigate("/", { replace: true });
+    else if (status === "pending") navigate("/kyc/pending", { replace: true });
+    else if (status === "rejected") navigate("/kyc/rejected", { replace: true });
+    else navigate("/kyc", { replace: true });
+  }
 
-        const { user } = res;
-        if (user.kyc_status === "approved") navigate("/");
-        else if (user.kyc_status === "pending") navigate("/kyc/pending");
-        else if (user.kyc_status === "rejected") navigate("/kyc/rejected");
-        else navigate("/kyc");
-      } catch (e) {
-        console.error("Telegram auth failed:", e);
+  async function handleTelegramData(tgUser: Record<string, unknown>) {
+    setLoading(true);
+    setError(null);
+    try {
+      const body = { ...tgUser, reg_session_id: sessionId || undefined };
+      const res = await api.post<any>("/client/auth/telegram", body);
+      setAuth(res);
+
+      if (sessionId) {
+        navigate("/auth/reg-success", { replace: true });
+        return;
       }
-    };
+      redirectByKycStatus(res.user.kyc_status);
+    } catch (e: any) {
+      setError(e.message || "Ошибка авторизации");
+      setLoading(false);
+    }
+  }
 
-    if (widgetRef.current) {
+  // Handle OAuth redirect callback (?id=...&hash=...)
+  useEffect(() => {
+    const tgId = searchParams.get("id");
+    const tgHash = searchParams.get("hash");
+    if (tgId && tgHash) {
+      handleTelegramData({
+        id: Number(tgId),
+        first_name: searchParams.get("first_name") || "",
+        last_name: searchParams.get("last_name") || undefined,
+        username: searchParams.get("username") || undefined,
+        photo_url: searchParams.get("photo_url") || undefined,
+        auth_date: Number(searchParams.get("auth_date") || 0),
+        hash: tgHash,
+      });
+    }
+  }, []);
+
+  // Load Telegram Login Widget
+  useEffect(() => {
+    (window as any).onTelegramAuth = (tgUser: any) => handleTelegramData(tgUser);
+
+    if (widgetRef.current && !scriptAdded.current) {
+      scriptAdded.current = true;
       const script = document.createElement("script");
       script.src = "https://telegram.org/js/telegram-widget.js?22";
       script.setAttribute("data-telegram-login", TG_BOT);
@@ -51,7 +89,18 @@ export function AuthPage() {
     return () => {
       delete (window as any).onTelegramAuth;
     };
-  }, [navigate, sessionId, setAuth]);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-ink-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-16">
+          <Spinner size={32} />
+          <p className="body text-ink-500">Входим...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-ink-50 flex flex-col items-center justify-center px-20 py-32">
@@ -60,7 +109,10 @@ export function AuthPage() {
 
         <Card variant="elevated" padding={32}>
           <div className="flex flex-col items-center gap-16 text-center">
-            <div className="w-48 h-48 rounded-full bg-accent flex items-center justify-center">
+            <div
+              className="rounded-full bg-accent flex items-center justify-center"
+              style={{ width: 48, height: 48 }}
+            >
               <MessageCircle size={24} className="text-accent-ink" />
             </div>
             <h1 className="h2 m-0">Войди, чтобы начать</h1>
@@ -68,7 +120,10 @@ export function AuthPage() {
               Авторизация через Telegram, без SMS и паролей
             </p>
 
+            {/* Telegram Login Widget renders here */}
             <div ref={widgetRef} className="min-h-[44px]" />
+
+            {error && <p className="body-sm text-danger m-0">{error}</p>}
 
             <details className="w-full">
               <summary className="body-sm text-ink-500 cursor-pointer text-center">

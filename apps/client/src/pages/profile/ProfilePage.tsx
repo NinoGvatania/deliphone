@@ -42,10 +42,14 @@ export function ProfilePage() {
           <img
             src={user.telegram_photo_url}
             alt=""
-            className="w-48 h-48 rounded-full object-cover"
+            className="rounded-full object-cover"
+            style={{ width: 48, height: 48 }}
           />
         ) : (
-          <div className="w-48 h-48 rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold h2">
+          <div
+            className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold"
+            style={{ width: 48, height: 48, fontSize: 20 }}
+          >
             {user?.telegram_first_name?.[0] ?? "?"}
           </div>
         )}
@@ -54,14 +58,11 @@ export function ProfilePage() {
           {user?.telegram_username && (
             <div className="body-sm text-ink-500">@{user.telegram_username}</div>
           )}
-          <Badge
-            variant={user?.kyc_status === "approved" ? "success" : "neutral"}
-            size="sm"
-          >
-            {user?.kyc_status === "approved" ? "Верифицирован" : user?.kyc_status ?? "—"}
-          </Badge>
         </div>
       </div>
+
+      {/* KYC status */}
+      <KycStatusBlock kycStatus={user?.kyc_status} />
 
       {/* Subscription block */}
       <ProfileSection
@@ -150,6 +151,47 @@ function ProfileSection({
         </div>
         <span className="flex-1 body font-medium">{title}</span>
         {right}
+      </div>
+    </Card>
+  );
+}
+
+const KYC_LABELS: Record<string, { label: string; variant: "success" | "warning" | "danger" | "info" | "neutral" }> = {
+  approved: { label: "Верифицирован", variant: "success" },
+  pending: { label: "На проверке", variant: "info" },
+  rejected: { label: "Отклонено", variant: "danger" },
+  resubmit_requested: { label: "Нужно переснять", variant: "warning" },
+  draft: { label: "Не завершено", variant: "neutral" },
+  none: { label: "Не пройдена", variant: "neutral" },
+};
+
+function KycStatusBlock({ kycStatus }: { kycStatus?: string }) {
+  const navigate = useNavigate();
+  const status = kycStatus || "none";
+  const info = KYC_LABELS[status] || KYC_LABELS["none"]!;
+  const actionable = status !== "approved" && status !== "pending";
+
+  return (
+    <Card
+      variant={status === "approved" ? "filled" : "outlined"}
+      padding={16}
+      onClick={actionable ? () => navigate("/kyc") : undefined}
+      style={{ cursor: actionable ? "pointer" : "default" }}
+    >
+      <div className="flex items-center gap-12">
+        <div
+          className="rounded-full bg-ink-100 flex items-center justify-center shrink-0"
+          style={{ width: 36, height: 36 }}
+        >
+          <Shield size={18} />
+        </div>
+        <div className="flex-1">
+          <span className="body font-medium">Верификация</span>
+          {actionable && (
+            <div className="caption text-ink-500">Нажми, чтобы продолжить</div>
+          )}
+        </div>
+        <Badge variant={info.variant} size="sm">{info.label}</Badge>
       </div>
     </Card>
   );

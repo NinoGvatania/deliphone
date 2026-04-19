@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback } from "react";
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export function useVideoRecorder(durationMs = 3000) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -8,19 +10,27 @@ export function useVideoRecorder(durationMs = 3000) {
   const [error, setError] = useState<string | null>(null);
 
   const start = useCallback(async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      setStream(s);
-      if (videoRef.current) {
-        videoRef.current.srcObject = s;
-        await videoRef.current.play();
+    setError(null);
+
+    for (let retry = 0; retry < 3; retry++) {
+      if (retry > 0) await sleep(500 * retry);
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        setStream(s);
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          await videoRef.current.play();
+        }
+        return;
+      } catch {
+        // retry
       }
-    } catch {
-      setError("Не удалось открыть камеру.");
     }
+
+    setError("Не удалось открыть камеру. Проверь доступ в настройках.");
   }, []);
 
   const record = useCallback(() => {
@@ -40,9 +50,15 @@ export function useVideoRecorder(durationMs = 3000) {
   const stop = useCallback(() => {
     stream?.getTracks().forEach((t) => t.stop());
     setStream(null);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }, [stream]);
 
-  const reset = useCallback(() => setVideo(null), []);
+  const reset = useCallback(() => {
+    setVideo(null);
+    setError(null);
+  }, []);
 
   return { videoRef, recording, video, error, start, record, stop, reset };
 }

@@ -1,39 +1,46 @@
 import { useEffect, useState } from "react";
-import { Button, Spinner } from "@deliphone/ui";
+import { Button } from "@deliphone/ui";
 import { Video, RotateCcw, Check } from "lucide-react";
 import { useVideoRecorder } from "@/hooks/useVideoRecorder";
+import { useAuthStore } from "@/stores/auth";
 
 type Props = {
-  uploadUrl: string;
+  submissionId: string;
   onUploaded: () => void;
 };
 
-export function KycVideoStep({ uploadUrl, onUploaded }: Props) {
+export function KycVideoStep({ submissionId, onUploaded }: Props) {
   const { videoRef, recording, video, error, start, record, stop, reset } = useVideoRecorder(3000);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const token = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
     start();
     return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRetake = () => {
     reset();
+    setUploadError(null);
     start();
   };
 
   const handleConfirm = async () => {
     if (!video) return;
     setUploading(true);
+    setUploadError(null);
     try {
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: video,
-        headers: { "Content-Type": "video/webm" },
-      });
-      stop();
+      const formData = new FormData();
+      formData.append("file", video, "video.webm");
+      const resp = await fetch(
+        `/api/v1/client/me/kyc/upload?submission_id=${submissionId}&file_type=video`,
+        { method: "POST", body: formData, headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      );
+      if (!resp.ok) throw new Error(`Ошибка загрузки: ${resp.status}`);
       onUploaded();
+    } catch (e: any) {
+      setUploadError(e.message);
     } finally {
       setUploading(false);
     }
@@ -43,9 +50,7 @@ export function KycVideoStep({ uploadUrl, onUploaded }: Props) {
     return (
       <div className="flex flex-col items-center text-center gap-16">
         <p className="body text-danger">{error}</p>
-        <Button variant="ghost" onClick={start}>
-          Попробовать снова
-        </Button>
+        <Button variant="ghost" onClick={start}>Попробовать снова</Button>
       </div>
     );
   }
@@ -58,19 +63,10 @@ export function KycVideoStep({ uploadUrl, onUploaded }: Props) {
         <div className="rounded-lg overflow-hidden bg-ink-900">
           <video src={previewUrl} controls className="w-full" />
         </div>
+        {uploadError && <p className="body-sm text-danger text-center">{uploadError}</p>}
         <div className="flex gap-12">
-          <Button variant="ghost" fullWidth icon={RotateCcw} onClick={handleRetake}>
-            Переснять
-          </Button>
-          <Button
-            variant="primary"
-            fullWidth
-            icon={Check}
-            loading={uploading}
-            onClick={handleConfirm}
-          >
-            Подтвердить
-          </Button>
+          <Button variant="ghost" fullWidth icon={RotateCcw} onClick={handleRetake}>Переснять</Button>
+          <Button variant="primary" fullWidth icon={Check} loading={uploading} onClick={handleConfirm}>Подтвердить</Button>
         </div>
       </div>
     );
@@ -82,21 +78,8 @@ export function KycVideoStep({ uploadUrl, onUploaded }: Props) {
       <p className="body-sm text-ink-500 text-center">
         Посмотри в камеру, поверни голову влево-вправо, моргни
       </p>
-
       <div className="relative rounded-lg overflow-hidden bg-ink-900 aspect-[3/4]">
-        {!recording && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            {/* Show spinner while camera initializes */}
-          </div>
-        )}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
-        />
+        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
         {recording && (
           <div className="absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-8 bg-danger/90 text-white px-12 py-4 rounded-full">
             <div className="w-8 h-8 rounded-full bg-white animate-pulse" />
@@ -104,7 +87,6 @@ export function KycVideoStep({ uploadUrl, onUploaded }: Props) {
           </div>
         )}
       </div>
-
       <Button variant="primary" size="lg" fullWidth icon={Video} disabled={recording} onClick={record}>
         {recording ? "Записываем..." : "Начать запись (3 сек)"}
       </Button>

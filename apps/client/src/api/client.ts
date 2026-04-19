@@ -1,7 +1,7 @@
 /**
  * API client — thin wrapper over fetch for the Deliphone backend.
  */
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_BASE = import.meta.env.VITE_API_URL || "/api/v1";
 
 type RequestOptions = {
   method?: string;
@@ -47,7 +47,14 @@ class ApiClient {
 
     if (!resp.ok) {
       const error = await resp.json().catch(() => ({ detail: resp.statusText }));
-      throw new ApiError(resp.status, error.detail || "Unknown error");
+      const detail = error.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: any) => d.msg || d.message || JSON.stringify(d)).join("; ")
+            : JSON.stringify(detail ?? "Unknown error");
+      throw new ApiError(resp.status, message);
     }
 
     if (resp.status === 204) return undefined as T;

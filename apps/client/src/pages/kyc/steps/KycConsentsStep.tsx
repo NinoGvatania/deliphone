@@ -38,8 +38,9 @@ export function KycConsentsStep({ submissionId, formData, onComplete }: Props) {
         consent_offer: consentOffer,
       });
       onComplete();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка отправки");
+    } catch (e: any) {
+      const msg = typeof e?.message === "string" ? e.message : JSON.stringify(e?.message ?? "Ошибка отправки");
+      setError(msg);
     } finally {
       setSubmitting(false);
     }

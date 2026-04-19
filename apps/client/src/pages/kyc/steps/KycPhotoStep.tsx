@@ -2,24 +2,26 @@ import { useEffect, useState } from "react";
 import { Button, Spinner } from "@deliphone/ui";
 import { Camera, RotateCcw, Check } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
+import { useAuthStore } from "@/stores/auth";
 
 type Props = {
   fileType: string;
-  uploadUrl: string;
+  submissionId: string;
   title: string;
   instruction: string;
   onUploaded: () => void;
 };
 
-export function KycPhotoStep({ uploadUrl, title, instruction, onUploaded }: Props) {
+export function KycPhotoStep({ fileType, submissionId, title, instruction, onUploaded }: Props) {
   const { videoRef, stream, photo, setPhoto, error, start, captureAsync, stop } =
     useCamera("environment");
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const token = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
     start();
     return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCapture = async () => {
@@ -29,20 +31,33 @@ export function KycPhotoStep({ uploadUrl, title, instruction, onUploaded }: Prop
 
   const handleRetake = () => {
     setPhoto(null);
+    setUploadError(null);
     start();
   };
 
   const handleConfirm = async () => {
     if (!photo) return;
     setUploading(true);
+    setUploadError(null);
     try {
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: photo,
-        headers: { "Content-Type": "image/jpeg" },
-      });
-      stop();
+      const formData = new FormData();
+      formData.append("file", photo, `${fileType}.jpg`);
+
+      const resp = await fetch(
+        `/api/v1/client/me/kyc/upload?submission_id=${submissionId}&file_type=${fileType}`,
+        {
+          method: "POST",
+          body: formData,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Ошибка загрузки: ${resp.status}`);
+      }
       onUploaded();
+    } catch (e: any) {
+      setUploadError(e.message || "Ошибка загрузки");
     } finally {
       setUploading(false);
     }
@@ -65,8 +80,11 @@ export function KycPhotoStep({ uploadUrl, title, instruction, onUploaded }: Prop
       <div className="flex flex-col gap-16">
         <h2 className="h2 text-center">{title}</h2>
         <div className="relative rounded-lg overflow-hidden">
-          <img src={previewUrl} alt="Фото паспорта" className="w-full" />
+          <img src={previewUrl} alt="Фото" className="w-full" />
         </div>
+        {uploadError && (
+          <p className="body-sm text-danger text-center">{uploadError}</p>
+        )}
         <div className="flex gap-12">
           <Button variant="ghost" fullWidth icon={RotateCcw} onClick={handleRetake}>
             Переснять
@@ -103,7 +121,6 @@ export function KycPhotoStep({ uploadUrl, title, instruction, onUploaded }: Prop
           muted
           className="w-full h-full object-cover"
         />
-        {/* Frame overlay */}
         <div className="absolute inset-8 border-2 border-white/40 rounded-lg pointer-events-none" />
       </div>
 
