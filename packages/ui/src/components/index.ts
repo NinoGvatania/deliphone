@@ -15,3 +15,9 @@ export type { IconProps, LucideIcon } from "./Icon.js";
 
 export { Spinner } from "./Spinner.js";
 export type { SpinnerProps } from "./Spinner.js";
+
+export { Logo } from "./Logo.js";
+export type { LogoProps, LogoVariant, LogoSize, LogoTone } from "./Logo.js";
+
+export { AppHeader } from "./AppHeader.js";
+export type { AppHeaderProps } from "./AppHeader.js";
