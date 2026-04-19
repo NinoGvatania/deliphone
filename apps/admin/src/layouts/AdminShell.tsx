@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { Badge, Button, Layout, Menu, Space, Typography } from "antd";
+import { Badge, Layout, Menu } from "antd";
 import type { MenuProps } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@deliphone/ui";
@@ -7,11 +7,10 @@ import { colors } from "@deliphone/ui/tokens";
 import { NAV } from "@/nav";
 
 const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
 
 /**
- * Admin layout shell — Sider with nav, Header with title slot, Content
- * via `<Outlet/>`. Sidebar active state is driven by the real URL via
+ * Admin layout shell — Sider with nav, minimal top bar, content via
+ * `<Outlet/>`. Sidebar active state is driven by the real URL via
  * useLocation, so navigating (from anywhere) always keeps the right item
  * highlighted.
  */
@@ -56,7 +55,7 @@ export function AdminShell() {
             borderBottom: `1px solid ${colors.ink[100]}`,
           }}
         >
-          <Logo size="md" variant={collapsed ? "full" : "full"} />
+          <Logo size="md" />
         </div>
         <Menu
           mode="inline"
@@ -69,20 +68,15 @@ export function AdminShell() {
 
       <Layout>
         <Header style={headerStyle}>
-          <Space size={12} align="center">
-            <Title level={4} style={{ margin: 0, color: colors.ink[0] }}>
-              Hello Deliphone admin
-            </Title>
-            <Badge
-              count="v0.1"
-              style={{
-                backgroundColor: colors.accent.DEFAULT,
-                color: colors.accent.ink,
-                fontWeight: 600,
-              }}
-            />
-          </Space>
-          <Button type="primary">Открыть дашборд</Button>
+          <span />
+          <Badge
+            count="v0.1"
+            style={{
+              backgroundColor: colors.accent.DEFAULT,
+              color: colors.accent.ink,
+              fontWeight: 600,
+            }}
+          />
         </Header>
         <Content style={{ padding: 24, maxWidth: 1200, margin: "0 auto", width: "100%" }}>
           <Outlet />
@@ -97,5 +91,7 @@ const headerStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   paddingInline: 24,
+  height: 56,
+  lineHeight: "56px",
   borderBottom: `1px solid ${colors.ink[800]}`,
 };
