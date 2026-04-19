@@ -35,7 +35,7 @@ export type NavItem = {
 };
 
 export const NAV: readonly NavItem[] = [
-  { key: "dashboard",    label: "Дашборд",         icon: LayoutDashboard, path: "/" },
+  { key: "dashboard",    label: "Дашборд",         icon: LayoutDashboard, path: "/dashboard" },
   { key: "kyc",          label: "Модерация KYC",   icon: UserCheck,       path: "/kyc" },
   { key: "users",        label: "Клиенты",         icon: Users,           path: "/users" },
   { key: "devices",      label: "Устройства",      icon: Smartphone,      path: "/devices" },
