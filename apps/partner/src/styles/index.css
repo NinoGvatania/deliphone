@@ -1,28 +1,20 @@
+@import "@deliphone/ui/styles/globals.css";
+@import "@deliphone/ui/styles/animations.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --ink-0: #ffffff;
-    --ink-50: #f7f7f6;
-    --ink-100: #efefed;
-    --ink-200: #e3e3df;
-    --ink-500: #6b6b65;
-    --ink-900: #0f0f0e;
-    --accent: #d6ff3d;
-    --accent-ink: #0f1410;
-  }
-
   html,
   body,
   #root {
-    @apply h-full;
+    height: 100%;
   }
 
   body {
-    @apply bg-ink-50 text-ink-900 font-sans antialiased;
-    font-size: 17px; /* tablet baseline */
-    line-height: 1.5;
+    background: var(--ink-50);
+    color: var(--ink-900);
+    font-size: 17px;
   }
 }
