@@ -30,10 +30,16 @@
 
 ## 2. Текущая фаза
 
-**Фаза 0 — каркас моно-репо.** Готово: структура папок, docker-compose, FastAPI-скелет с `/healthz`, три фронта с заглушечными «Hello»-страницами, дизайн-система Делифон (токены в `packages/shared-types`).
+**Фаза 0 — каркас моно-репо и дизайн-система — DONE.**
+Сделано:
+- структура папок, docker-compose, FastAPI-скелет с `/healthz`
+- три фронта с живыми «Hello»-страницами в стилистике Делифон
+- пакет `@deliphone/ui` — единый источник правды дизайн-системы (токены, базовые компоненты Button/Card/Badge/Input/Icon/Spinner, Tailwind-пресет, глобальные CSS-переменные и keyframes)
+- `apps/client`, `apps/partner` подтягивают `@deliphone/ui/tailwind.preset`; `apps/admin` — тему Ant Design через `ConfigProvider`
 
-Бизнес-логики в коде нет. Следующие фазы (§19.1):
-1. Фаза 1 — модели БД, auth (клиент SMS, партнёр, админ+2FA), базовые CRUD
+**Текущая фаза — Фаза 1 из §19.1:** модели БД, auth (клиент SMS, партнёр email+пароль, админ+2FA TOTP), базовые CRUD.
+
+Следующие фазы (§19.1):
 2. Фаза 2 — клиентское PWA (KYC, карта, бронирование, аренда)
 3. Фаза 3 — партнёрский кабинет (мастера выдачи/приёма)
 4. Фаза 4 — инциденты и финальная админка
@@ -50,9 +56,12 @@
 - Audit log — по умолчанию для всех действий операторов/админов (§3.2, таблица `audit_log` в §13).
 
 ### Дизайн-система
-- Все цвета, типографика, радиусы, тени — только из `@deliphone/shared-types/tokens` (`DelifonTokens`). Не хардкодь hex в компонентах. Если не хватает токена — добавляй его в `tokens.ts` и используй во всех фронтах.
-- Tailwind-классы: `bg-accent`, `bg-ink-900`, `text-ink-500`, `rounded-full`, `shadow-elev-2` и т. д. — уже настроены.
-- Ant Design: тема в `apps/admin/src/theme/antdTheme.ts`. Хочешь добавить новый компонент-кастомизацию — правь там.
+- Источник правды — пакет **`@deliphone/ui`** (`packages/ui/`). Токены в `src/tokens/*`, базовые компоненты в `src/components/*`, Tailwind-пресет в `tailwind.preset.ts`, глобальные CSS-переменные и keyframes в `src/styles/{globals,animations}.css`. Референс в `docs/design-system.html` + `docs/{tokens,base,product,compositions,icons,app}.jsx` — трогать эти файлы не надо, они зафиксированный output дизайн-агента.
+- Все цвета, типографика, радиусы, тени — только из токенов (`import { colors, font, radius } from "@deliphone/ui/tokens"`). Хардкодить hex в компонентах — запрещено. Не хватает токена — добавляй в `packages/ui/src/tokens/*` и используй.
+- Клиент и партнёр — Tailwind с пресетом `@deliphone/ui/tailwind.preset`. Классы `bg-accent`, `bg-ink-900`, `text-ink-500`, `rounded-full`, `shadow-elev-2`, текст-токены `h1/h2/body/body-sm/caption/mono`, анимации `animate-delifon-*` — уже настроены.
+- Базовые UI-компоненты (`Button`, `Card`, `Badge`, `Input`, `Icon`, `Spinner`) — из `@deliphone/ui`. Иконки — тонкий враппер `Icon` над `lucide-react`; названия — как в Lucide (`ArrowLeft`, `QrCode`, `AlertCircle` и т. д.).
+- Админка — Ant Design 5, тема маппит токены Делифон в `apps/admin/src/theme/antdTheme.ts` (`colorPrimary` = лайм, графитовые ink-уровни, pill-кнопки). Правишь тему — здесь.
+- Back-compat: `@deliphone/shared-types/tokens` ещё работает как re-export из `@deliphone/ui/tokens`, но новый код импортируй из `@deliphone/ui` напрямую.
 
 ### Код
 - Не добавляй абстракции «на будущее» — реализуй ровно то, что просит задача или спека. Не делай feature-flags и backwards-compatibility shims, если можно просто изменить код.
