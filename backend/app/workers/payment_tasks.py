@@ -242,12 +242,16 @@ async def _update_debts() -> dict:
     from sqlalchemy import select
 
     from app.core.db import _get_session_factory
-    from app.models.rentals import Incident, Rental
+    from app.models.catalog import Device
+    from app.models.finance import Debt
+    from app.models.ops import SupportChat
+    from app.models.rentals import Incident, Payment, Rental
     from app.models.users import User
-    from app.services.notifications import send_kyc_notification
+    from app.services.notifications import get_notification_service
 
     factory = _get_session_factory()
     now = datetime.now(UTC)
+    svc = get_notification_service()
 
     async with factory() as session:
         result = await session.execute(
@@ -283,6 +287,34 @@ async def _update_debts() -> dict:
             if new_debt >= 4500 and old_debt < 4500:
                 # "Потеряшка" — device considered lost
                 rental.status = "closed_incident"
+
+                # Capture deposit
+                deposit_amount = Decimal(str(rental.deposit_amount or 0))
+                if deposit_amount > 0:
+                    deposit_payment = Payment(
+                        user_id=rental.user_id,
+                        rental_id=rental.id,
+                        type="deposit_capture",
+                        counts_toward_partner_commission=False,
+                        amount=deposit_amount,
+                        provider="yookassa",
+                        provider_status="succeeded",
+                        captured_at=now,
+                    )
+                    session.add(deposit_payment)
+
+                # If debt exceeds deposit, create Debt record for the difference
+                if new_debt > deposit_amount:
+                    remainder = new_debt - deposit_amount
+                    debt_record = Debt(
+                        user_id=rental.user_id,
+                        origin_type="rental",
+                        origin_id=rental.id,
+                        amount=float(remainder),
+                        status="active",
+                    )
+                    session.add(debt_record)
+
                 # Create loss incident
                 incident = Incident(
                     rental_id=rental.id,
@@ -292,30 +324,70 @@ async def _update_debts() -> dict:
                     severity="critical",
                     status="open",
                     reported_by="system",
-                    description="Долг достиг стоимости устройства (4500 ₽). Устройство объявлено утраченным.",
+                    description="Устройство объявлено утраченным",
                 )
                 session.add(incident)
-                await send_kyc_notification(
-                    session, user,
-                    event_type="debt_device_lost",
+
+                # Mark device as missing
+                device_result = await session.execute(
+                    select(Device).where(Device.id == rental.device_id)
+                )
+                device = device_result.scalars().first()
+                if device:
+                    device.current_custody = "missing"
+
+                # Notify client
+                await svc.send(
+                    session,
+                    recipient_type="user",
+                    recipient_id=user.id,
+                    event_type="debt_threshold_4500",
                     title="Устройство объявлено утраченным",
                     body="Долг достиг 4500 ₽. Залог будет удержан полностью.",
+                    extra={"telegram_id": user.telegram_id},
+                )
+
+                # Notify admin about critical incident
+                await svc.send(
+                    session,
+                    recipient_type="admin_user",
+                    recipient_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
+                    event_type="incident_critical_created",
+                    title="Критический инцидент",
+                    body=f"Потеряшка: пользователь {user.telegram_id}, долг {new_debt} ₽.",
+                    channels=["in_app"],
                 )
 
             elif new_debt >= 2500 and old_debt < 2500:
-                await send_kyc_notification(
-                    session, user,
+                # Create support chat for debt management
+                chat = SupportChat(
+                    user_id=rental.user_id,
+                    rental_id=rental.id,
+                    subject="Долг клиента превысил 2500 ₽",
+                    status="open",
+                    priority="high",
+                )
+                session.add(chat)
+
+                await svc.send(
+                    session,
+                    recipient_type="user",
+                    recipient_id=user.id,
                     event_type="debt_threshold_2500",
                     title="Долг за аренду: {:.0f} ₽".format(new_debt),
                     body="Пополни карту, чтобы избежать блокировки.",
+                    extra={"telegram_id": user.telegram_id},
                 )
 
             elif new_debt >= 1000 and old_debt < 1000:
-                await send_kyc_notification(
-                    session, user,
+                await svc.send(
+                    session,
+                    recipient_type="user",
+                    recipient_id=user.id,
                     event_type="debt_threshold_1000",
                     title="Задолженность: {:.0f} ₽".format(new_debt),
                     body="Пополни карту — автосписание пройдёт при следующей попытке.",
+                    extra={"telegram_id": user.telegram_id},
                 )
 
         await session.commit()
