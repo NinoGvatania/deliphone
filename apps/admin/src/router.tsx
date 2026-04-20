@@ -16,6 +16,7 @@ import { FinancePage } from "@/pages/FinancePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AuditLogPage } from "@/pages/AuditLogPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
+import { SupportPage } from "@/pages/SupportPage";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "audit-log", element: <AuditLogPage /> },
       { path: "analytics", element: <AnalyticsPage /> },
+      { path: "support", element: <SupportPage /> },
     ],
   },
 ]);

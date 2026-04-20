@@ -4,6 +4,7 @@ import {
   AlertOctagon,
   BarChart3,
   Boxes,
+  HeadphonesIcon,
   ClipboardList,
   Clock,
   FileSearch,
@@ -49,6 +50,7 @@ export const NAV: readonly NavItem[] = [
   { key: "finance",      label: "Финансы",         icon: Wallet,          path: "/finance" },
   { key: "settings",     label: "Настройки",       icon: Settings,        path: "/settings" },
   { key: "audit-log",    label: "Audit log",       icon: ScrollText,      path: "/audit-log" },
+  { key: "support",      label: "Поддержка",       icon: HeadphonesIcon,  path: "/support" },
   { key: "analytics",    label: "Аналитика",       icon: BarChart3,       path: "/analytics" },
 ] as const;
 
