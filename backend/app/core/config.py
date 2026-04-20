@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
+    # --- Google Android Management (MDM) ---
+    GOOGLE_MDM_PROJECT_ID: str = ""
+    GOOGLE_MDM_ENTERPRISE_ID: str = ""
+    GOOGLE_MDM_SERVICE_ACCOUNT_JSON_PATH: str = ""
+    GOOGLE_MDM_DEFAULT_POLICY_NAME: str = "normal_policy"
+
     # --- external providers (blank until wired in later phases) ---
     YOOKASSA_SHOP_ID: str = ""
     YOOKASSA_SECRET_KEY: str = ""

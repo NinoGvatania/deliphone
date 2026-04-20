@@ -28,6 +28,7 @@ dependencies = [
     "pyotp>=2.9",
     "cryptography>=43",
     "email-validator>=2.2",
+    "google-auth>=2.35",
 ]
 
 [project.optional-dependencies]
