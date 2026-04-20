@@ -19,7 +19,7 @@ from app.schemas.payments import (
     PaymentMethodOut,
     SetDefaultResponse,
 )
-from app.services.receipts import get_receipt_email
+from app.services.receipts import get_receipt_customer
 from app.services.yookassa import get_yookassa
 
 router = APIRouter(tags=["client-payments"])
@@ -44,9 +44,8 @@ async def init_payment_method(
     session: AsyncSession = Depends(get_session),
 ) -> PaymentMethodInitResponse:
     yookassa = get_yookassa()
-    email = get_receipt_email(user)
     receipt = {
-        "customer": {"email": email},
+        "customer": get_receipt_customer(user),
         "items": [
             {
                 "description": "Привязка карты",

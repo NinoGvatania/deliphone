@@ -52,18 +52,16 @@ async def main() -> None:
         # 2 demo clients
         client_ids = []
         for phone, name in [("79991110001", "Иван Демо"), ("79991110002", "Мария Тест")]:
-            exists = await session.execute(select(User).where(User.phone == phone))
+            exists = await session.execute(select(User).where(User.phone_number == phone))
             if exists.scalars().first():
                 continue
             uid = uuid.uuid4()
             client_ids.append(uid)
             session.add(User(
                 id=uid,
-                phone=phone,
+                phone_number=phone,
                 first_name=name.split()[0],
-                last_name=name.split()[1],
                 status="active",
-                kyc_status="approved",
             ))
 
         # Demo support chat (only if clients were created)

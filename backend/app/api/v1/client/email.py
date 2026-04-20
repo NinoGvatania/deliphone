@@ -16,7 +16,7 @@ class SetEmailRequest(BaseModel):
 
 
 class EmailResponse(BaseModel):
-    email_for_receipts: str
+    email: str
 
 
 @router.post("/me/email", response_model=EmailResponse)
@@ -25,6 +25,6 @@ async def set_email(
     user: User = Depends(get_current_client),
     session: AsyncSession = Depends(get_session),
 ) -> EmailResponse:
-    user.email_for_receipts = body.email
+    user.email = body.email
     await session.commit()
-    return EmailResponse(email_for_receipts=body.email)
+    return EmailResponse(email=body.email)

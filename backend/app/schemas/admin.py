@@ -77,12 +77,11 @@ class AlertItem(BaseModel):
 
 class UserListItem(BaseModel):
     id: UUID
-    telegram_id: int
-    telegram_username: str | None = None
-    telegram_first_name: str | None = None
-    telegram_last_name: str | None = None
-    kyc_status: str
+    phone_number: str
+    first_name: str
+    email: str | None = None
     status: str
+    is_blocked: bool = False
     total_rentals: int = 0
     created_at: datetime | None = None
 
@@ -95,16 +94,12 @@ class UserListResponse(PaginatedResponse):
 
 class UserDetail(BaseModel):
     id: UUID
-    telegram_id: int
-    telegram_username: str | None = None
-    telegram_first_name: str | None = None
-    telegram_last_name: str | None = None
+    phone_number: str
+    first_name: str
     email: str | None = None
-    kyc_status: str
     status: str
+    is_blocked: bool = False
     blocked_reason: str | None = None
-    full_name: str | None = None
-    birth_date: date | None = None
     no_show_count: int = 0
     total_rentals: int = 0
     created_at: datetime | None = None

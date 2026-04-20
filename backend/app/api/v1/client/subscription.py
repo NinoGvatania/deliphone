@@ -14,7 +14,7 @@ from app.core.deps import get_current_client
 from app.models.rentals import Payment
 from app.models.users import PaymentMethod, Subscription, User
 from app.schemas.payments import SubscriptionCancelResponse, SubscriptionOut
-from app.services.receipts import get_receipt_email
+from app.services.receipts import get_receipt_customer
 from app.services.yookassa import get_yookassa
 
 router = APIRouter(tags=["client-subscription"])
@@ -62,9 +62,8 @@ async def create_subscription(
         raise HTTPException(422, "no default payment method, add a card first")
 
     yookassa = get_yookassa()
-    email = get_receipt_email(user)
     receipt = {
-        "customer": {"email": email},
+        "customer": get_receipt_customer(user),
         "items": [
             {
                 "description": "Подписка Удобно (30 дней)",

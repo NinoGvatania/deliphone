@@ -81,8 +81,8 @@ async def scan_client_qr(
     if not device:
         raise HTTPException(404, "device not found")
 
-    user_name = user.full_name or user.telegram_first_name or "Unknown"
-    user_photo = getattr(user, "telegram_photo_url", None)
+    user_name = user.first_name
+    user_photo = None
 
     return IssueWizardInit(
         rental_id=rental.id,

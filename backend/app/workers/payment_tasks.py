@@ -344,7 +344,7 @@ async def _update_debts() -> dict:
                     event_type="debt_threshold_4500",
                     title="Устройство объявлено утраченным",
                     body="Долг достиг 4500 ₽. Залог будет удержан полностью.",
-                    extra={"telegram_id": user.telegram_id},
+                    channels=["in_app"],
                 )
 
                 # Notify admin about critical incident
@@ -354,7 +354,7 @@ async def _update_debts() -> dict:
                     recipient_id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
                     event_type="incident_critical_created",
                     title="Критический инцидент",
-                    body=f"Потеряшка: пользователь {user.telegram_id}, долг {new_debt} ₽.",
+                    body=f"Потеряшка: пользователь {user.phone_number}, долг {new_debt} ₽.",
                     channels=["in_app"],
                 )
 
@@ -376,7 +376,7 @@ async def _update_debts() -> dict:
                     event_type="debt_threshold_2500",
                     title="Долг за аренду: {:.0f} ₽".format(new_debt),
                     body="Пополни карту, чтобы избежать блокировки.",
-                    extra={"telegram_id": user.telegram_id},
+                    channels=["in_app"],
                 )
 
             elif new_debt >= 1000 and old_debt < 1000:
@@ -387,7 +387,7 @@ async def _update_debts() -> dict:
                     event_type="debt_threshold_1000",
                     title="Задолженность: {:.0f} ₽".format(new_debt),
                     body="Пополни карту — автосписание пройдёт при следующей попытке.",
-                    extra={"telegram_id": user.telegram_id},
+                    channels=["in_app"],
                 )
 
         await session.commit()

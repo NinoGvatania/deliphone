@@ -28,9 +28,8 @@ async def list_users(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     search: str | None = Query(None),
-    kyc_status: str | None = Query(None),
     status: str | None = Query(None),
-    admin: AdminUser = Depends(require_admin_role("kyc_operator", "manager", "admin")),
+    admin: AdminUser = Depends(require_admin_role("manager", "admin")),
     session: AsyncSession = Depends(get_session),
 ) -> UserListResponse:
     base = select(User)
@@ -39,17 +38,12 @@ async def list_users(
     if search:
         like = f"%{search}%"
         flt = or_(
-            User.telegram_username.ilike(like),
-            User.telegram_first_name.ilike(like),
-            User.telegram_last_name.ilike(like),
+            User.phone_number.ilike(like),
+            User.first_name.ilike(like),
             User.email.ilike(like),
         )
         base = base.where(flt)
         count_q = count_q.where(flt)
-
-    if kyc_status:
-        base = base.where(User.kyc_status == kyc_status)
-        count_q = count_q.where(User.kyc_status == kyc_status)
 
     if status:
         base = base.where(User.status == status)

@@ -272,17 +272,6 @@ class NotificationService:
         session.add(notif)
 
         if telegram_id is None:
-            # Try to look up telegram_id from user table
-            from app.models.users import User
-
-            result = await session.execute(
-                select(User).where(User.id == recipient_id)
-            )
-            user = result.scalars().first()
-            if user:
-                telegram_id = user.telegram_id
-
-        if telegram_id is None:
             notif.status = "skipped"
             logger.info("tg_notify.no_telegram_id", recipient_id=str(recipient_id))
             return
@@ -363,8 +352,7 @@ async def send_kyc_notification(
         event_type=event_type,
         title=title,
         body=body,
-        channels=["in_app", "telegram_bot"],
-        extra={"telegram_id": user.telegram_id},
+        channels=["in_app"],
     )
 
 

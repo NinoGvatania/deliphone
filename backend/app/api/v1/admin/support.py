@@ -97,7 +97,7 @@ async def list_queues(
             )
             user = user_result.scalars().first()
             if user:
-                user_name = user.telegram_first_name or user.telegram_username
+                user_name = user.first_name
                 # Check Udobno subscription
                 sub_result = await session.execute(
                     select(Subscription).where(

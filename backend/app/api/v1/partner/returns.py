@@ -80,7 +80,7 @@ async def return_init(
     # Load user
     user_result = await session.execute(select(User).where(User.id == rental.user_id))
     user = user_result.scalars().first()
-    user_name = (user.full_name or user.telegram_first_name or "Unknown") if user else "Unknown"
+    user_name = user.first_name if user else "Unknown"
 
     session_id = uuid.uuid4()
     qr_url = f"https://app.deliphone.ru/return/{session_id}"

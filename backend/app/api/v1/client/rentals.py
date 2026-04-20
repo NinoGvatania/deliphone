@@ -93,8 +93,8 @@ async def create_rental(
     user: User = Depends(get_current_client),
     session: AsyncSession = Depends(get_session),
 ) -> RentalDetail:
-    if user.kyc_status != "approved":
-        raise HTTPException(403, "KYC not approved")
+    if user.is_blocked:
+        raise HTTPException(403, "account is blocked")
 
     # Check default payment method
     default_pm = next(

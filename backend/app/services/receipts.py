@@ -1,29 +1,27 @@
-"""Receipt email resolution for 54-FZ compliance."""
+"""Receipt email/phone resolution for 54-FZ compliance."""
 
 from __future__ import annotations
 
 from decimal import Decimal
 
-from app.core.config import settings
 from app.models.users import User
 
 
-def get_receipt_email(user: User) -> str:
-    """Return the email to use in YooKassa receipt for this user.
+def get_receipt_customer(user: User) -> dict:
+    """Return the customer field for YooKassa receipt.
 
-    If the user has set an explicit email_for_receipts, use it.
-    Otherwise, generate a deterministic fallback from telegram_id.
+    Uses email if available, otherwise phone number (without + prefix).
     """
-    if user.email_for_receipts:
-        return user.email_for_receipts
-    return f"tg{user.telegram_id}@{settings.RECEIPT_EMAIL_DOMAIN}"
+    if user.email:
+        return {"email": user.email}
+    return {"phone": user.phone_number.lstrip("+").lstrip("7")}
 
 
 def build_receipt(user: User, description: str, amount: Decimal) -> dict:
     """Build a YooKassa receipt dict for 54-FZ."""
-    email = get_receipt_email(user)
+    customer = get_receipt_customer(user)
     return {
-        "customer": {"email": email},
+        "customer": customer,
         "items": [
             {
                 "description": description,
