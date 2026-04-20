@@ -41,6 +41,17 @@
 - [ ] Push-уведомления (FCM) настроены
 - [ ] Email-рассылка (актыа, чеки) через транзакционный сервис
 
+## MDM (Google Android Management)
+
+- [ ] Google Cloud project with Android Management API enabled
+- [ ] Enterprise enrollment configured
+- [ ] Three policies created: kiosk, active_rental, lost_or_stolen
+- [ ] Enrollment QR generation endpoint tested
+- [ ] Remote lock/wipe commands tested on test device
+- [ ] Policy auto-switch on rental start/end verified
+- [ ] Factory reset protection configured with admin credentials
+- [ ] Location reporting interval configured (5 min for lost devices)
+
 ## Перед запуском
 
 - [ ] Нагрузочное тестирование (100 concurrent users)

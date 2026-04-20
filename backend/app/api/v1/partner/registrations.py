@@ -65,11 +65,8 @@ async def registration_status(
         if user:
             user_brief = PartnerRegisteredUserBrief(
                 id=user.id,
-                telegram_id=user.telegram_id,
-                telegram_first_name=user.telegram_first_name,
-                telegram_last_name=user.telegram_last_name,
-                telegram_photo_url=user.telegram_photo_url,
-                kyc_status=user.kyc_status,
+                phone_number=user.phone_number,
+                first_name=user.first_name,
             )
 
     return RegistrationSessionStatusResponse(

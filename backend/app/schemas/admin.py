@@ -632,29 +632,6 @@ class TariffUpdateRequest(BaseModel):
     is_active: bool | None = None
 
 
-class DamagePricingItem(BaseModel):
-    id: UUID
-    device_model: str | None = None
-    category: str | None = None
-    subcategory: str | None = None
-    price: float
-    is_active: bool = True
-
-    model_config = {"from_attributes": True}
-
-
-class DamagePricingCreateRequest(BaseModel):
-    device_model: str | None = None
-    category: str | None = None
-    subcategory: str | None = None
-    price: float
-
-
-class DamagePricingUpdateRequest(BaseModel):
-    price: float | None = None
-    is_active: bool | None = None
-
-
 class ParametersResponse(BaseModel):
     params: dict
 
