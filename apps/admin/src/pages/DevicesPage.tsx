@@ -8,18 +8,18 @@ import {
   Modal,
   Select,
   Space,
-  Steps,
   Table,
+  Tabs,
   Tag,
   Timeline,
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { Plus } from "lucide-react";
+import { Lock, Plus, Power, QrCode, RotateCcw, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 type Device = {
   id: string;
@@ -33,6 +33,12 @@ type Device = {
   photos: string[];
   specs: Record<string, string>;
   movements: { date: string; from: string; to: string; reason: string }[];
+  mdm?: {
+    enrolled: boolean;
+    compliance: boolean;
+    last_sync: string | null;
+    policy_name: string | null;
+  };
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -55,6 +61,8 @@ export function DevicesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [filters, setFilters] = useState<{ status?: string; custody?: string; location?: string }>({});
   const [form] = Form.useForm();
+  const [mdmAction, setMdmAction] = useState<{ action: string; label: string } | null>(null);
+  const [enrollQrOpen, setEnrollQrOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "devices", filters],
@@ -81,6 +89,15 @@ export function DevicesPage() {
     mutationFn: ({ id, action }: { id: string; action: string }) =>
       api(`/devices/${id}/${action}`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "devices"] }),
+  });
+
+  const mdmMut = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: string }) =>
+      api(`/devices/${id}/mdm/${action}`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "devices"] });
+      setMdmAction(null);
+    },
   });
 
   const columns: ColumnsType<Device> = [
@@ -186,25 +203,168 @@ export function DevicesPage() {
         }
       >
         {selected && (
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
-            <Card title="Характеристики">
-              {Object.entries(selected.specs).map(([k, v]) => (
-                <div key={k}>
-                  <strong>{k}:</strong> {v}
-                </div>
-              ))}
-            </Card>
+          <Tabs
+            defaultActiveKey="info"
+            items={[
+              {
+                key: "info",
+                label: "Информация",
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                    <Card title="Характеристики">
+                      {Object.entries(selected.specs).map(([k, v]) => (
+                        <div key={k}>
+                          <strong>{k}:</strong> {v}
+                        </div>
+                      ))}
+                    </Card>
 
-            <Card title="Перемещения">
-              <Timeline
-                items={selected.movements.map((m) => ({
-                  children: `${m.date}: ${m.from} → ${m.to} (${m.reason})`,
-                }))}
-              />
-            </Card>
-          </Space>
+                    <Card title="Перемещения">
+                      <Timeline
+                        items={selected.movements.map((m) => ({
+                          children: `${m.date}: ${m.from} → ${m.to} (${m.reason})`,
+                        }))}
+                      />
+                    </Card>
+                  </Space>
+                ),
+              },
+              {
+                key: "mdm",
+                label: "MDM",
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                    <Card title="MDM статус">
+                      <Space direction="vertical" size={8}>
+                        <div>
+                          <Text type="secondary">Статус: </Text>
+                          {selected.mdm?.enrolled ? (
+                            <Tag color="green">Enrolled</Tag>
+                          ) : (
+                            <Tag color="default">Not enrolled</Tag>
+                          )}
+                        </div>
+                        <div>
+                          <Text type="secondary">Compliance: </Text>
+                          {selected.mdm?.compliance ? (
+                            <Tag color="green">Compliant</Tag>
+                          ) : (
+                            <Tag color="orange">Non-compliant</Tag>
+                          )}
+                        </div>
+                        <div>
+                          <Text type="secondary">Last sync: </Text>
+                          <Text>{selected.mdm?.last_sync ?? "Never"}</Text>
+                        </div>
+                        <div>
+                          <Text type="secondary">Policy: </Text>
+                          <Text>{selected.mdm?.policy_name ?? "None"}</Text>
+                        </div>
+                      </Space>
+                    </Card>
+
+                    <Card title="Действия">
+                      <Space wrap>
+                        {!selected.mdm?.enrolled && (
+                          <Button
+                            icon={<QrCode size={14} />}
+                            onClick={() => setEnrollQrOpen(true)}
+                          >
+                            Enroll Device
+                          </Button>
+                        )}
+                        <Button
+                          icon={<Lock size={14} />}
+                          onClick={() => setMdmAction({ action: "lock", label: "Lock" })}
+                        >
+                          Lock
+                        </Button>
+                        <Button
+                          icon={<RotateCcw size={14} />}
+                          onClick={() => setMdmAction({ action: "reboot", label: "Reboot" })}
+                        >
+                          Reboot
+                        </Button>
+                        <Button
+                          onClick={() => setMdmAction({ action: "reset-password", label: "Reset Password" })}
+                        >
+                          Reset Password
+                        </Button>
+                        <Button
+                          danger
+                          icon={<Trash2 size={14} />}
+                          onClick={() => setMdmAction({ action: "wipe", label: "Wipe" })}
+                        >
+                          Wipe
+                        </Button>
+                      </Space>
+                    </Card>
+
+                    <Card title="Ссылки">
+                      <a
+                        href="https://admin.google.com/ac/chrome/devices"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Google MDM Console
+                      </a>
+                    </Card>
+                  </Space>
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
+
+      {/* MDM action confirmation modal */}
+      <Modal
+        title={`Подтвердите: ${mdmAction?.label}`}
+        open={!!mdmAction}
+        onCancel={() => setMdmAction(null)}
+        onOk={() =>
+          selected && mdmAction && mdmMut.mutate({ id: selected.id, action: mdmAction.action })
+        }
+        okText="Выполнить"
+        okButtonProps={{ danger: mdmAction?.action === "wipe" }}
+        confirmLoading={mdmMut.isPending}
+      >
+        <p>
+          {mdmAction?.action === "wipe"
+            ? "ВНИМАНИЕ: Это действие полностью сотрёт все данные на устройстве. Действие необратимо."
+            : `Вы уверены, что хотите выполнить "${mdmAction?.label}" для устройства ${selected?.model}?`}
+        </p>
+      </Modal>
+
+      {/* Enroll QR modal */}
+      <Modal
+        title="Enrollment QR"
+        open={enrollQrOpen}
+        onCancel={() => setEnrollQrOpen(false)}
+        footer={<Button onClick={() => setEnrollQrOpen(false)}>Закрыть</Button>}
+      >
+        <div style={{ textAlign: "center", padding: 24 }}>
+          <p>Отсканируйте QR-код на устройстве для enrollment в MDM:</p>
+          <div
+            style={{
+              width: 200,
+              height: 200,
+              margin: "16px auto",
+              background: "#f5f5f5",
+              border: "1px solid #d9d9d9",
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <QrCode size={120} strokeWidth={1} />
+          </div>
+          <Text type="secondary">
+            QR генерируется через Google MDM API при подключении к интернету
+          </Text>
+        </div>
+      </Modal>
 
       {/* Add device modal */}
       <Modal

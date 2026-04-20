@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   Smartphone,
   Truck,
-  UserCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -37,7 +36,6 @@ export type NavItem = {
 
 export const NAV: readonly NavItem[] = [
   { key: "dashboard",    label: "Дашборд",         icon: LayoutDashboard, path: "/dashboard" },
-  { key: "kyc",          label: "Модерация KYC",   icon: UserCheck,       path: "/kyc" },
   { key: "users",        label: "Клиенты",         icon: Users,           path: "/users" },
   { key: "devices",      label: "Устройства",      icon: Smartphone,      path: "/devices" },
   { key: "rentals",      label: "Аренды",          icon: Clock,           path: "/rentals" },
