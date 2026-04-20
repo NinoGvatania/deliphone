@@ -2,7 +2,6 @@ import { createBrowserRouter } from "react-router-dom";
 import { PartnerLayout } from "@/layouts/PartnerLayout";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
-import { RegistrationWizard } from "@/pages/registration/RegistrationWizard";
 import { IssueWizard } from "@/pages/issue/IssueWizard";
 import { ReturnWizard } from "@/pages/return/ReturnWizard";
 import { InventoryPage } from "@/pages/InventoryPage";
@@ -21,7 +20,6 @@ export const router = createBrowserRouter([
       { path: "support", element: <SupportPage /> },
     ],
   },
-  { path: "/register", element: <RegistrationWizard /> },
   { path: "/issue", element: <IssueWizard /> },
   { path: "/return", element: <ReturnWizard /> },
 ]);

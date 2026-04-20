@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -6,8 +6,8 @@ import {
   CheckCircle,
   PenTool,
   QrCode,
-  ScanLine,
-  UserCheck,
+  Search,
+  Smartphone,
 } from "lucide-react";
 import { Button, Card, Spinner, Logo, AppHeader } from "@deliphone/ui";
 import { issueApi } from "@/api/partner";
@@ -15,42 +15,35 @@ import SignatureCanvas from "react-signature-canvas";
 import { QrScanner } from "@/components/QrScanner";
 
 type Step =
-  | "scan-client"
-  | "identity"
+  | "select-client"
   | "scan-device"
   | "photos"
   | "signature"
-  | "finalize"
+  | "payment-qr"
   | "done";
 
 const STEP_LABELS: Record<Step, string> = {
-  "scan-client": "Сканирование QR клиента",
-  "identity": "Проверка личности",
+  "select-client": "Выбор клиента",
   "scan-device": "Сканирование устройства",
   "photos": "Фото устройства",
   "signature": "Подпись клиента",
-  "finalize": "Подтверждение выдачи",
+  "payment-qr": "Оплата клиентом",
   "done": "Выдача завершена",
 };
 
 const STEPS = Object.keys(STEP_LABELS) as Step[];
 
-const PHOTO_LABELS = [
-  "Экран",
-  "Передняя панель",
-  "Задняя панель",
-  "Левая сторона",
-  "Правая сторона",
-  "Нижняя сторона",
-] as const;
+const PHOTO_LABELS = ["Экран", "Передняя панель", "Задняя панель"] as const;
 
 export function IssueWizard() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("scan-client");
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [step, setStep] = useState<Step>("select-client");
+  const [rentalId, setRentalId] = useState<string | null>(null);
+  const [clientData, setClientData] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [paymentQr, setPaymentQr] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "paid">("pending");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,34 +81,13 @@ export function IssueWizard() {
           <h1 className="h2 text-ink-900 mb-16">{STEP_LABELS[step]}</h1>
           {error && <div className="body-sm text-danger mb-16">{error}</div>}
 
-          {step === "scan-client" && (
-            <ScanClientStep
-              onScanned={async (qr) => {
+          {step === "select-client" && (
+            <SelectClientStep
+              onSelected={async (client) => {
                 setLoading(true);
                 setError(null);
                 try {
-                  const res = await issueApi.scanClientQr(qr);
-                  setBookingId(res.booking_id);
-                  setBookingData(res);
-                  setStep("identity");
-                } catch (err: any) {
-                  setError(err.message);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              loading={loading}
-            />
-          )}
-
-          {step === "identity" && bookingData && (
-            <IdentityStep
-              data={bookingData}
-              onConfirm={async () => {
-                if (!bookingId) return;
-                setLoading(true);
-                try {
-                  await issueApi.confirmIdentity(bookingId);
+                  setClientData(client);
                   setStep("scan-device");
                 } catch (err: any) {
                   setError(err.message);
@@ -130,11 +102,15 @@ export function IssueWizard() {
           {step === "scan-device" && (
             <ScanDeviceStep
               onScanned={async (imei, serial) => {
-                if (!bookingId) return;
                 setLoading(true);
                 setError(null);
                 try {
-                  await issueApi.scanDevice(bookingId, { imei, serial_number: serial });
+                  const res = await issueApi.selectDevice({
+                    client_id: clientData.id,
+                    imei,
+                    serial_number: serial,
+                  });
+                  setRentalId(res.rental_id);
                   setStep("photos");
                 } catch (err: any) {
                   setError(err.message);
@@ -151,10 +127,10 @@ export function IssueWizard() {
               photos={photos}
               setPhotos={setPhotos}
               onDone={async () => {
-                if (!bookingId) return;
+                if (!rentalId) return;
                 setLoading(true);
                 try {
-                  await issueApi.uploadPhotos(bookingId, photos);
+                  await issueApi.uploadPhotos(rentalId, photos);
                   setStep("signature");
                 } catch (err: any) {
                   setError(err.message);
@@ -169,12 +145,13 @@ export function IssueWizard() {
           {step === "signature" && (
             <SignatureStep
               onSigned={async (url) => {
-                if (!bookingId) return;
+                if (!rentalId) return;
                 setSignatureUrl(url);
                 setLoading(true);
                 try {
-                  await issueApi.clientSignature(bookingId, url);
-                  setStep("finalize");
+                  const res = await issueApi.clientSignature(rentalId, url);
+                  setPaymentQr(res.payment_qr_url);
+                  setStep("payment-qr");
                 } catch (err: any) {
                   setError(err.message);
                 } finally {
@@ -185,21 +162,15 @@ export function IssueWizard() {
             />
           )}
 
-          {step === "finalize" && (
-            <FinalizeStep
-              onFinalize={async () => {
-                if (!bookingId) return;
-                setLoading(true);
-                try {
-                  await issueApi.finalizeIssue(bookingId);
-                  setStep("done");
-                } catch (err: any) {
-                  setError(err.message);
-                } finally {
-                  setLoading(false);
-                }
+          {step === "payment-qr" && (
+            <PaymentQrStep
+              qrUrl={paymentQr}
+              rentalId={rentalId}
+              status={paymentStatus}
+              onPaid={() => {
+                setPaymentStatus("paid");
+                setStep("done");
               }}
-              loading={loading}
             />
           )}
 
@@ -214,54 +185,81 @@ export function IssueWizard() {
 
 // --- Sub-steps ---
 
-function ScanClientStep({ onScanned }: { onScanned: (qr: string) => void; loading: boolean }) {
-  return (
-    <QrScanner
-      onScanned={onScanned}
-      label="Попросите клиента показать QR-код из приложения"
-      placeholder="ID аренды"
-    />
-  );
-}
-
-function IdentityStep({
-  data,
-  onConfirm,
+function SelectClientStep({
+  onSelected,
   loading,
 }: {
-  data: any;
-  onConfirm: () => void;
+  onSelected: (client: any) => void;
   loading: boolean;
 }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  async function handleSearch() {
+    if (query.length < 3) return;
+    setSearching(true);
+    try {
+      const res = await issueApi.searchClients(query);
+      setResults(res.items ?? []);
+    } catch {
+      // ignore
+    } finally {
+      setSearching(false);
+    }
+  }
+
   return (
-    <Card variant="outlined" padding={32} className="flex flex-col items-center gap-24">
-      <UserCheck size={48} className="text-accent" />
-      <p className="body text-ink-700 text-center">Сверьте данные с документом клиента</p>
-      <div className="grid grid-cols-2 gap-16 w-full">
-        {data.kyc_photo_url && (
-          <img
-            src={data.kyc_photo_url}
-            alt="Фото из KYC"
-            className="w-full rounded-12 object-cover aspect-[3/4]"
-          />
-        )}
-        <div className="flex flex-col gap-8">
-          <div className="body-sm text-ink-500">Имя</div>
-          <div className="body text-ink-900">{data.client_name ?? "Не указано"}</div>
-          <div className="body-sm text-ink-500 mt-8">Устройство</div>
-          <div className="body text-ink-900">{data.device_model ?? "Не указано"}</div>
-          <div className="body-sm text-ink-500 mt-8">Бронирование</div>
-          <div className="body text-ink-900">#{data.booking_id?.slice(0, 8)}</div>
-        </div>
+    <Card variant="outlined" padding={32} className="flex flex-col gap-20">
+      <p className="body text-ink-700">Найдите клиента по номеру телефона</p>
+
+      <div className="flex gap-12">
+        <input
+          type="tel"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="+7 (900) 123-45-67"
+          className="flex-1 px-16 py-12 rounded-12 border border-ink-200 bg-ink-0 body text-ink-900 outline-none focus:border-accent"
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        />
+        <Button
+          variant="primary"
+          icon={Search}
+          onClick={handleSearch}
+          loading={searching}
+        >
+          Найти
+        </Button>
       </div>
-      <Button variant="primary" size="lg" fullWidth onClick={onConfirm} loading={loading}>
-        Личность подтверждена
-      </Button>
+
+      {results.length > 0 && (
+        <div className="flex flex-col gap-8">
+          {results.map((client) => (
+            <button
+              key={client.id}
+              onClick={() => onSelected(client)}
+              className="w-full flex items-center gap-12 p-12 rounded-12 border border-ink-200 bg-ink-0 text-left hover:bg-ink-50 transition-colors"
+            >
+              <div className="w-40 h-40 rounded-full bg-ink-100 flex items-center justify-center body font-bold text-ink-600">
+                {client.first_name?.[0] ?? "?"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="body text-ink-900 truncate">{client.first_name}</div>
+                <div className="body-sm text-ink-500">{client.phone_number}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {results.length === 0 && query.length >= 3 && !searching && (
+        <p className="body-sm text-ink-400 text-center">Клиент не найден</p>
+      )}
     </Card>
   );
 }
 
-function ScanDeviceStep({ onScanned }: { onScanned: (imei: string, serial: string) => void; loading: boolean }) {
+function ScanDeviceStep({ onScanned, loading }: { onScanned: (imei: string, serial: string) => void; loading: boolean }) {
   return (
     <QrScanner
       onScanned={(text) => {
@@ -338,9 +336,9 @@ function PhotosStep({
         <p className="body text-ink-700">
           {allDone
             ? "Все фото сделаны"
-            : `Фото ${currentIndex + 1}/6: ${PHOTO_LABELS[currentIndex]}`}
+            : `Фото ${currentIndex + 1}/3: ${PHOTO_LABELS[currentIndex]}`}
         </p>
-        <span className="caption text-ink-400">{photos.length}/6</span>
+        <span className="caption text-ink-400">{photos.length}/3</span>
       </div>
 
       {!allDone && (
@@ -374,7 +372,7 @@ function PhotosStep({
 
       {/* Thumbnails */}
       {photos.length > 0 && (
-        <div className="grid grid-cols-6 gap-8">
+        <div className="grid grid-cols-3 gap-8">
           {photos.map((url, i) => (
             <div key={i} className="relative aspect-square rounded-8 overflow-hidden border border-ink-200">
               <img src={url} alt={PHOTO_LABELS[i]} className="w-full h-full object-cover" />
@@ -448,23 +446,60 @@ function SignatureStep({
   );
 }
 
-function FinalizeStep({
-  onFinalize,
-  loading,
+function PaymentQrStep({
+  qrUrl,
+  rentalId,
+  status,
+  onPaid,
 }: {
-  onFinalize: () => void;
-  loading: boolean;
+  qrUrl: string | null;
+  rentalId: string | null;
+  status: "pending" | "paid";
+  onPaid: () => void;
 }) {
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!rentalId || status === "paid") return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await issueApi.checkPaymentStatus(rentalId);
+        if (res.status === "paid") {
+          onPaid();
+        }
+      } catch {
+        // retry
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [rentalId, status, onPaid]);
+
   return (
     <Card variant="outlined" padding={32} className="flex flex-col items-center gap-24">
-      <CheckCircle size={48} className="text-accent" />
-      <p className="h2 text-ink-900">Всё готово к выдаче</p>
+      <QrCode size={48} className="text-accent" />
+      <p className="h3 text-ink-900 text-center">Покажите QR клиенту для оплаты</p>
       <p className="body text-ink-500 text-center">
-        Фотографии загружены, подпись получена. Нажмите для завершения выдачи.
+        Клиент сканирует QR своим телефоном и оплачивает залог + первый день
       </p>
-      <Button variant="primary" size="lg" fullWidth onClick={onFinalize} loading={loading}>
-        Завершить выдачу
-      </Button>
+
+      {qrUrl && (
+        <div className="p-16 bg-ink-0 rounded-16 border border-ink-200">
+          <img
+            src={qrUrl}
+            alt="Payment QR"
+            className="w-[200px] h-[200px]"
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-8">
+        <Spinner size={16} />
+        <span className="body-sm text-ink-500">Ожидание оплаты...</span>
+      </div>
     </Card>
   );
 }
@@ -475,7 +510,7 @@ function DoneStep({ onBack }: { onBack: () => void }) {
       <CheckCircle size={64} className="text-accent" />
       <p className="h1 text-ink-900">Устройство выдано</p>
       <p className="body text-ink-500 text-center">
-        Выдача оформлена. Передайте устройство клиенту.
+        Оплата получена, выдача оформлена. Передайте устройство клиенту.
       </p>
       <Button variant="primary" size="lg" fullWidth onClick={onBack}>
         На главную

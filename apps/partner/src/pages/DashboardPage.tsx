@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   PackageCheck,
   PackageOpen,
-  UserPlus,
   Warehouse,
   Wallet,
   MessageCircle,
@@ -57,8 +56,8 @@ export function DashboardPage() {
     devices_total: 0,
     devices_free: 0,
     revenue_today: 0,
-    acquisitions_today: 0,
-    acquisition_bonus: 0,
+    rentals_today: 0,
+    commission_today: 0,
   };
 
   return (
@@ -80,7 +79,7 @@ export function DashboardPage() {
       {/* Primary actions */}
       <section>
         <div className="caption text-ink-500 uppercase tracking-wider mb-8">Что делаем?</div>
-        <div className="grid grid-cols-3 gap-12">
+        <div className="grid grid-cols-2 gap-12">
           <Button
             variant="primary"
             size="lg"
@@ -99,15 +98,6 @@ export function DashboardPage() {
           >
             Принять устройство
           </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            icon={UserPlus}
-            fullWidth
-            onClick={() => navigate("/register")}
-          >
-            Зарегистрировать клиента
-          </Button>
         </div>
       </section>
 
@@ -119,10 +109,10 @@ export function DashboardPage() {
             label="Выручка"
             value={`${stats.revenue_today.toLocaleString("ru-RU")} \u20BD`}
           />
-          <StatCard label="Новых клиентов" value={stats.acquisitions_today} />
+          <StatCard label="Выдач сегодня" value={stats.rentals_today} />
           <StatCard
-            label="Бонус за привлечение"
-            value={`${stats.acquisition_bonus.toLocaleString("ru-RU")} \u20BD`}
+            label="Комиссия"
+            value={`${stats.commission_today.toLocaleString("ru-RU")} \u20BD`}
           />
         </div>
       </section>
