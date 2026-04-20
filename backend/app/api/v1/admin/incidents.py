@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
@@ -12,8 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.deps import require_admin_role
 from app.models.admin import AdminUser
+from app.models.catalog import Device
 from app.models.ops import AuditLog
-from app.models.rentals import Incident
+from app.models.rentals import Incident, Payment, Rental
 from app.schemas.admin import (
     IncidentAssignRequest,
     IncidentDetail,
@@ -167,12 +169,42 @@ async def resolve_incident(
     if not incident:
         raise HTTPException(404, "incident not found")
 
+    now = datetime.now(UTC)
     incident.status = "resolved"
     incident.resolution_type = body.resolution_type
     incident.reviewer_comment = body.reviewer_comment
-    incident.resolved_at = datetime.now(UTC)
-    incident.reviewed_at = datetime.now(UTC)
+    incident.resolved_at = now
+    incident.reviewed_at = now
     incident.reviewer_id = admin.id
+
+    # Handle resolution-type-specific side effects
+    if body.resolution_type == "resolved_no_fault" and incident.type == "malfunction":
+        # Close old rental without charges
+        if incident.rental_id:
+            rental_result = await session.execute(
+                select(Rental).where(Rental.id == incident.rental_id)
+            )
+            rental = rental_result.scalars().first()
+            if rental:
+                rental.status = "closed_incident"
+                rental.closed_at = now
+
+    elif body.resolution_type == "resolved_paid" and incident.client_charge:
+        # Create payment from client for damage amount
+        if incident.user_id:
+            payment = Payment(
+                user_id=incident.user_id,
+                rental_id=incident.rental_id,
+                incident_id=incident.id,
+                type="incident_charge",
+                counts_toward_partner_commission=False,
+                amount=Decimal(str(incident.client_charge)),
+                provider="yookassa",
+                provider_status="succeeded",
+                captured_at=now,
+            )
+            session.add(payment)
+
     session.add(AuditLog(
         admin_user_id=admin.id,
         action="incident.resolve",

@@ -1,4 +1,8 @@
-"""Client incident endpoints (SPEC.md §14.1)."""
+"""Client incident endpoints (SPEC.md §14.1).
+
+All 11 incident types: damage, malfunction, loss, theft, water,
+incomplete_return, frp_locked, dispute_return, partner_issue, possible_loss, other.
+"""
 
 from __future__ import annotations
 
@@ -6,21 +10,35 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.core.deps import get_current_client
+from app.models.catalog import Device
 from app.models.rentals import Incident, Rental
 from app.models.users import User
 from app.schemas.rentals import IncidentBrief, IncidentCreateRequest
 
 router = APIRouter(prefix="/incidents", tags=["client-incidents"])
 
+VALID_INCIDENT_TYPES = [
+    "damage", "malfunction", "loss", "theft", "water",
+    "incomplete_return", "frp_locked", "dispute_return",
+    "partner_issue", "possible_loss", "other",
+]
+
 
 class IncidentCreateBody(IncidentCreateRequest):
     rental_id: uuid.UUID
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        if v not in VALID_INCIDENT_TYPES:
+            raise ValueError(f"Invalid incident type. Must be one of: {VALID_INCIDENT_TYPES}")
+        return v
 
 
 @router.post("", response_model=IncidentBrief, status_code=201)
@@ -37,11 +55,18 @@ async def create_incident(
     if rental is None:
         raise HTTPException(404, "rental not found")
 
+    severity = "normal"
+    if body.type in ("loss", "theft"):
+        severity = "critical"
+    elif body.type == "malfunction":
+        severity = "high"
+
     incident = Incident(
         rental_id=rental.id,
         device_id=rental.device_id,
         user_id=user.id,
         type=body.type,
+        severity=severity,
         status="open",
         description=body.description,
         photo_urls=body.photo_urls if body.photo_urls else None,
@@ -53,6 +78,16 @@ async def create_incident(
     # Freeze rental for loss/theft
     if body.type in ("loss", "theft"):
         rental.status = "frozen_incident"
+
+    # Malfunction: freeze rental, mark device in_service
+    if body.type == "malfunction":
+        rental.status = "frozen_incident"
+        device_result = await session.execute(
+            select(Device).where(Device.id == rental.device_id)
+        )
+        device = device_result.scalars().first()
+        if device:
+            device.current_custody = "in_service"
 
     await session.commit()
     await session.refresh(incident)
