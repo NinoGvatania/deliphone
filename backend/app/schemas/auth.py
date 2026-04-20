@@ -33,22 +33,10 @@ class RefreshRequest(BaseModel):
 # ---------- client ----------
 
 
-class TelegramAuthRequest(BaseModel):
-    id: int
-    first_name: str
-    last_name: str | None = None
-    username: str | None = None
-    photo_url: str | None = None
-    auth_date: int
-    hash: str
-    reg_session_id: UUID | None = None
-
-
 class UserBrief(BaseModel):
     id: UUID
-    telegram_id: int
-    telegram_username: str | None = None
-    kyc_status: str
+    phone_number: str
+    first_name: str
     status: str
 
     model_config = {"from_attributes": True}

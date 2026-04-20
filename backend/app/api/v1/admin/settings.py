@@ -11,12 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.deps import require_admin_role
 from app.models.admin import AdminUser
-from app.models.catalog import DamagePricing, Tariff
+from app.models.catalog import Tariff
 from app.models.ops import AuditLog
 from app.schemas.admin import (
-    DamagePricingCreateRequest,
-    DamagePricingItem,
-    DamagePricingUpdateRequest,
     NotificationTemplatesResponse,
     NotificationTemplatesUpdateRequest,
     ParametersResponse,
@@ -100,79 +97,6 @@ async def update_tariff(
     await session.commit()
     await session.refresh(tariff)
     return TariffItem.model_validate(tariff)
-
-
-# --- Damage Pricing ---
-
-
-@router.get("/damage-pricing", response_model=list[DamagePricingItem])
-async def list_damage_pricing(
-    admin: AdminUser = Depends(require_admin_role("manager", "admin")),
-    session: AsyncSession = Depends(get_session),
-) -> list[DamagePricingItem]:
-    result = await session.execute(select(DamagePricing).order_by(DamagePricing.created_at.desc()))
-    items = result.scalars().all()
-    return [DamagePricingItem.model_validate(i) for i in items]
-
-
-@router.post("/damage-pricing", response_model=DamagePricingItem)
-async def create_damage_pricing(
-    body: DamagePricingCreateRequest,
-    request: Request,
-    admin: AdminUser = Depends(require_admin_role("admin")),
-    session: AsyncSession = Depends(get_session),
-) -> DamagePricingItem:
-    item = DamagePricing(
-        device_model=body.device_model,
-        category=body.category,
-        subcategory=body.subcategory,
-        price=body.price,
-    )
-    session.add(item)
-    session.add(AuditLog(
-        admin_user_id=admin.id,
-        action="settings.damage_pricing.create",
-        entity_type="damage_pricing",
-        entity_id=item.id,
-        changes=body.model_dump(),
-        ip=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
-    ))
-    await session.commit()
-    await session.refresh(item)
-    return DamagePricingItem.model_validate(item)
-
-
-@router.patch("/damage-pricing/{pricing_id}", response_model=DamagePricingItem)
-async def update_damage_pricing(
-    pricing_id: uuid.UUID,
-    body: DamagePricingUpdateRequest,
-    request: Request,
-    admin: AdminUser = Depends(require_admin_role("admin")),
-    session: AsyncSession = Depends(get_session),
-) -> DamagePricingItem:
-    result = await session.execute(select(DamagePricing).where(DamagePricing.id == pricing_id))
-    item = result.scalars().first()
-    if not item:
-        raise HTTPException(404, "damage pricing not found")
-
-    changes = {}
-    for field, value in body.model_dump(exclude_unset=True).items():
-        setattr(item, field, value)
-        changes[field] = value
-
-    session.add(AuditLog(
-        admin_user_id=admin.id,
-        action="settings.damage_pricing.update",
-        entity_type="damage_pricing",
-        entity_id=item.id,
-        changes=changes,
-        ip=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
-    ))
-    await session.commit()
-    await session.refresh(item)
-    return DamagePricingItem.model_validate(item)
 
 
 # --- Parameters (app-wide config key-value) ---

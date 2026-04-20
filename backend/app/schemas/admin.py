@@ -27,7 +27,6 @@ class PaginatedResponse(BaseModel):
 
 class DashboardKPI(BaseModel):
     active_rentals: int = 0
-    kyc_queue: int = 0
     open_incidents: int = 0
     devices_total: int = 0
     devices_free: int = 0

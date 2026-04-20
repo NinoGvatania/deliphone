@@ -11,7 +11,6 @@ from app.api.v1.admin.dashboard import router as dashboard_router
 from app.api.v1.admin.devices import router as devices_router
 from app.api.v1.admin.finance import router as finance_router
 from app.api.v1.admin.incidents import router as incidents_router
-from app.api.v1.admin.kyc import router as kyc_router
 from app.api.v1.admin.locations import router as locations_router
 from app.api.v1.admin.logistics import router as logistics_router
 from app.api.v1.admin.partners import router as partners_router
@@ -24,7 +23,6 @@ from app.api.v1.admin.users import router as users_router
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 router.include_router(auth_router)
-router.include_router(kyc_router)
 router.include_router(dashboard_router)
 router.include_router(users_router)
 router.include_router(subscriptions_router)

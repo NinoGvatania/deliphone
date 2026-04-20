@@ -13,7 +13,7 @@ from app.core.deps import get_current_admin
 from app.models.admin import AdminUser
 from app.models.catalog import Device
 from app.models.rentals import Incident, Payment, Rental
-from app.models.users import KycSubmission, Subscription
+from app.models.users import Subscription
 from app.schemas.admin import (
     AlertItem,
     DashboardKPI,
@@ -33,10 +33,6 @@ async def dashboard_kpi(
 
     active_rentals = (await session.execute(
         select(func.count()).select_from(Rental).where(Rental.status == "active")
-    )).scalar() or 0
-
-    kyc_queue = (await session.execute(
-        select(func.count()).select_from(KycSubmission).where(KycSubmission.status == "pending")
     )).scalar() or 0
 
     open_incidents = (await session.execute(
@@ -63,7 +59,6 @@ async def dashboard_kpi(
 
     return DashboardKPI(
         active_rentals=active_rentals,
-        kyc_queue=kyc_queue,
         open_incidents=open_incidents,
         devices_total=devices_total,
         devices_free=devices_free,
@@ -144,17 +139,6 @@ async def dashboard_alerts(
     session: AsyncSession = Depends(get_session),
 ) -> list[AlertItem]:
     alerts: list[AlertItem] = []
-
-    kyc_pending = (await session.execute(
-        select(func.count()).select_from(KycSubmission).where(KycSubmission.status == "pending")
-    )).scalar() or 0
-    if kyc_pending > 0:
-        alerts.append(AlertItem(
-            id="kyc_queue",
-            type="kyc",
-            message=f"{kyc_pending} KYC submissions awaiting review",
-            severity="info",
-        ))
 
     critical_incidents = (await session.execute(
         select(func.count()).select_from(Incident).where(

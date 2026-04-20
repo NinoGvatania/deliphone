@@ -3,7 +3,6 @@
 from fastapi import APIRouter
 
 from app.api.v1.partner.auth import router as auth_router
-from app.api.v1.partner.clients import router as clients_router
 from app.api.v1.partner.dashboard import router as dashboard_router
 from app.api.v1.partner.finance import router as finance_router
 from app.api.v1.partner.inventory import router as inventory_router
@@ -15,7 +14,6 @@ from app.api.v1.partner.support import router as support_router
 router = APIRouter(prefix="/partner", tags=["partner"])
 router.include_router(auth_router)
 router.include_router(registrations_router)
-router.include_router(clients_router)
 router.include_router(dashboard_router)
 router.include_router(issues_router)
 router.include_router(returns_router)
