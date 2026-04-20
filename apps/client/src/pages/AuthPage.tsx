@@ -19,19 +19,12 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const scriptAdded = useRef(false);
 
-  // If already logged in — redirect immediately
+  // If already logged in — always go to map
   useEffect(() => {
-    if (isAuth && user) {
-      redirectByKycStatus(user.kyc_status);
+    if (isAuth) {
+      navigate("/", { replace: true });
     }
-  }, [isAuth, user]);
-
-  function redirectByKycStatus(status: string) {
-    if (status === "approved") navigate("/", { replace: true });
-    else if (status === "pending") navigate("/kyc/pending", { replace: true });
-    else if (status === "rejected") navigate("/kyc/rejected", { replace: true });
-    else navigate("/kyc", { replace: true });
-  }
+  }, [isAuth, navigate]);
 
   async function handleTelegramData(tgUser: Record<string, unknown>) {
     setLoading(true);
@@ -45,7 +38,7 @@ export function AuthPage() {
         navigate("/auth/reg-success", { replace: true });
         return;
       }
-      redirectByKycStatus(res.user.kyc_status);
+      navigate("/", { replace: true });
     } catch (e: any) {
       setError(e.message || "Ошибка авторизации");
       setLoading(false);

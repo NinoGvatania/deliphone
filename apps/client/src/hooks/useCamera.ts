@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 type CameraMode = "environment" | "user";
 
@@ -6,12 +6,26 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function useCamera(preferredMode: CameraMode = "environment") {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Cleanup on unmount — always kills the stream
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
+
+    // Kill any existing stream first
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setStream(null);
 
     const attempts = [
       { facingMode: { ideal: preferredMode } },
@@ -19,8 +33,6 @@ export function useCamera(preferredMode: CameraMode = "environment") {
       true,
     ];
 
-    // Retry up to 3 times with increasing delay — gives the browser
-    // time to release the previous camera stream between KYC steps.
     for (let retry = 0; retry < 3; retry++) {
       if (retry > 0) await sleep(500 * retry);
 
@@ -32,14 +44,15 @@ export function useCamera(preferredMode: CameraMode = "environment") {
               : { ...videoConstraint, width: { ideal: 1920 }, height: { ideal: 1080 } },
             audio: false,
           });
+          streamRef.current = s;
           setStream(s);
           if (videoRef.current) {
             videoRef.current.srcObject = s;
             await videoRef.current.play();
           }
-          return; // success
+          return;
         } catch {
-          // try next constraint or retry
+          // try next
         }
       }
     }
@@ -58,12 +71,13 @@ export function useCamera(preferredMode: CameraMode = "environment") {
   }, []);
 
   const stop = useCallback(() => {
-    stream?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream]);
+  }, []);
 
   const reset = useCallback(() => {
     setPhoto(null);

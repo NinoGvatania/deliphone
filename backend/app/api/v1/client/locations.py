@@ -17,12 +17,7 @@ from app.schemas.rentals import DeviceBrief, LocationBrief, LocationDetail
 router = APIRouter(prefix="/locations", tags=["client-locations"])
 
 
-def _location_to_brief(loc: PartnerLocation, available: int) -> LocationBrief:
-    lat: float | None = None
-    lng: float | None = None
-    if loc.coordinates is not None:
-        # coordinates is a WKBElement; extract via ST_X / ST_Y in the query
-        pass
+def _location_to_brief(loc: PartnerLocation, available: int, lat: float | None = None, lng: float | None = None) -> LocationBrief:
     return LocationBrief(
         id=loc.id,
         name=loc.name,
@@ -62,6 +57,8 @@ async def list_locations(
         select(
             PartnerLocation,
             func.coalesce(device_count.c.cnt, 0).label("available_devices"),
+            func.ST_Y(func.ST_Transform(PartnerLocation.coordinates, 4326)).label("loc_lat"),
+            func.ST_X(func.ST_Transform(PartnerLocation.coordinates, 4326)).label("loc_lng"),
         )
         .outerjoin(
             device_count,
@@ -91,21 +88,7 @@ async def list_locations(
     rows = result.all()
 
     items: list[LocationBrief] = []
-    for loc, avail in rows:
-        # Extract lat/lng from geometry via additional query if coordinates present
-        loc_lat: float | None = None
-        loc_lng: float | None = None
-        if loc.coordinates is not None:
-            coord_result = await session.execute(
-                select(
-                    func.ST_Y(loc.coordinates).label("lat"),
-                    func.ST_X(loc.coordinates).label("lng"),
-                )
-            )
-            coord = coord_result.one()
-            loc_lat = coord.lat
-            loc_lng = coord.lng
-
+    for loc, avail, loc_lat, loc_lng in rows:
         items.append(
             LocationBrief(
                 id=loc.id,

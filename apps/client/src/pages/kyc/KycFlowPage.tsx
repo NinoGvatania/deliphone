@@ -57,13 +57,8 @@ export function KycFlowPage() {
       } else {
         setStep("intro");
       }
-    } catch (e: any) {
-      if (e.status === 401) {
-        logout();
-        navigate("/auth", { replace: true });
-        return;
-      }
-      // If getStatus fails (e.g. no KYC yet), show intro
+    } catch {
+      // API error (no submission yet, or network issue) — show intro
       setStep("intro");
     } finally {
       setLoading(false);
@@ -77,10 +72,7 @@ export function KycFlowPage() {
       setInitData(data);
       setStep("passport_main");
     } catch (e: any) {
-      if (e.status === 401) {
-        logout();
-        navigate("/auth", { replace: true });
-      } else if (e.status === 409) {
+      if (e.status === 409) {
         // Already exists — fetch status and redirect
         try {
           const status = await kycApi.getStatus();

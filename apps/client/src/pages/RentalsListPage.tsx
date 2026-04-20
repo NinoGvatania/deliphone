@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Card, Badge, Spinner } from "@deliphone/ui";
-import { Smartphone, ChevronRight } from "lucide-react";
+import { ArrowLeft, Smartphone, ChevronRight } from "lucide-react";
 import { rentalsApi, type RentalBrief } from "@/api/rentals";
 
 function statusBadge(status: string) {
@@ -93,6 +93,7 @@ function RentalCard({ rental }: { rental: RentalBrief }) {
 }
 
 export function RentalsListPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"active" | "history">("active");
 
   const { data: activeData, isLoading: activeLoading } = useQuery({
@@ -112,8 +113,14 @@ export function RentalsListPage() {
   const rentals = tab === "active" ? activeRentals : historyRentals;
 
   return (
-    <div className="px-16 py-20">
-      <h1 className="h2 m-0 mb-16">Аренды</h1>
+    <div className="min-h-screen bg-ink-50">
+      <div className="sticky top-0 z-10 bg-ink-0 border-b border-ink-200 px-16 py-12 flex items-center gap-12">
+        <button onClick={() => navigate("/profile")} className="text-ink-600">
+          <ArrowLeft size={20} />
+        </button>
+        <h2 className="body font-semibold m-0 flex-1">Мои аренды</h2>
+      </div>
+      <div className="px-16 py-20">
 
       {/* Tabs */}
       <div className="flex gap-8 mb-20">
@@ -163,6 +170,7 @@ export function RentalsListPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

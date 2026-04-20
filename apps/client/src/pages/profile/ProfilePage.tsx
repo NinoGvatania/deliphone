@@ -1,18 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, Badge } from "@deliphone/ui";
+import { Badge, Card } from "@deliphone/ui";
 import {
+  ArrowLeft,
+  ChevronRight,
   CreditCard,
+  History,
   LogOut,
   Mail,
   MessageCircle,
-  Package,
-  Settings,
   Shield,
-  User,
+  Smartphone,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { paymentsApi } from "@/api/payments";
+import { rentalsApi } from "@/api/rentals";
+import { colors } from "@deliphone/ui/tokens";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -29,170 +32,137 @@ export function ProfilePage() {
     queryFn: () => paymentsApi.listMethods(),
   });
 
+  const { data: history } = useQuery({
+    queryKey: ["rentals-history"],
+    queryFn: () => rentalsApi.list("history"),
+  });
+
   const handleLogout = () => {
     logout();
     navigate("/auth");
   };
 
+  const kycLabel = {
+    approved: "Верифицирован",
+    pending: "На проверке",
+    rejected: "Отклонено",
+    none: "Не пройдена",
+  }[user?.kyc_status ?? "none"] ?? user?.kyc_status;
+
   return (
-    <div className="px-16 py-20 max-w-[480px] mx-auto w-full flex flex-col gap-16">
-      {/* User header */}
-      <div className="flex items-center gap-16">
-        {user?.telegram_photo_url ? (
-          <img
-            src={user.telegram_photo_url}
-            alt=""
-            className="rounded-full object-cover"
-            style={{ width: 48, height: 48 }}
-          />
-        ) : (
-          <div
-            className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold"
-            style={{ width: 48, height: 48, fontSize: 20 }}
-          >
-            {user?.telegram_first_name?.[0] ?? "?"}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="h3 truncate">{user?.telegram_first_name ?? "Пользователь"}</div>
-          {user?.telegram_username && (
-            <div className="body-sm text-ink-500">@{user.telegram_username}</div>
-          )}
-        </div>
+    <div className="min-h-screen bg-ink-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-ink-0 border-b border-ink-200 px-16 py-12 flex items-center gap-12">
+        <button onClick={() => navigate("/")} className="text-ink-600">
+          <ArrowLeft size={20} />
+        </button>
+        <h2 className="body font-semibold m-0 flex-1">Профиль</h2>
       </div>
 
-      {/* KYC status */}
-      <KycStatusBlock kycStatus={user?.kyc_status} />
-
-      {/* Subscription block */}
-      <ProfileSection
-        icon={Shield}
-        title="Подписка «Удобно»"
-        right={
-          subscription?.status === "active" ? (
-            <Badge variant="accent" size="sm">Активна</Badge>
+      <div className="px-16 py-20 flex flex-col gap-20 max-w-[480px] mx-auto">
+        {/* User card */}
+        <div className="flex items-center gap-16">
+          {user?.telegram_photo_url ? (
+            <img src={user.telegram_photo_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
           ) : (
-            <span className="body-sm text-accent-ink font-semibold">199 ₽/мес</span>
-          )
-        }
-        onClick={() => navigate("/profile/subscription")}
-      />
-
-      {/* Cards */}
-      <ProfileSection
-        icon={CreditCard}
-        title="Привязанные карты"
-        right={
-          <Badge variant="neutral" size="sm">
-            {methods?.length ?? 0}
+            <div className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold" style={{ width: 56, height: 56, fontSize: 22 }}>
+              {user?.telegram_first_name?.[0] ?? "?"}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="h3 truncate">{user?.telegram_first_name ?? "Пользователь"}</div>
+            {user?.telegram_username && <div className="body-sm text-ink-500">@{user.telegram_username}</div>}
+          </div>
+          <Badge
+            variant={user?.kyc_status === "approved" ? "success" : "neutral"}
+            size="sm"
+          >
+            {kycLabel}
           </Badge>
-        }
-        onClick={() => navigate("/profile/bind-card")}
-      />
+        </div>
 
-      {/* Email */}
-      <ProfileSection
-        icon={Mail}
-        title="Email для чеков"
-        onClick={() => navigate("/profile/email")}
-      />
+        {/* Sections */}
+        <div className="flex flex-col gap-8">
+          <SectionLabel>Аренда</SectionLabel>
+          <MenuItem
+            icon={Smartphone} label="Мои аренды"
+            right={<Badge variant="neutral" size="sm">{history?.total ?? 0}</Badge>}
+            onClick={() => navigate("/rentals")}
+          />
+          <MenuItem
+            icon={Shield} label="Подписка «Удобно»"
+            right={subscription?.status === "active"
+              ? <Badge variant="accent" size="sm">Активна</Badge>
+              : <span className="caption text-ink-400">199 ₽/мес</span>}
+            onClick={() => navigate("/profile/subscription")}
+          />
+        </div>
 
-      {/* Rentals history (placeholder) */}
-      <ProfileSection
-        icon={Package}
-        title="История аренд"
-        right={<Badge variant="neutral" size="sm">Скоро</Badge>}
-        disabled
-      />
+        <div className="flex flex-col gap-8">
+          <SectionLabel>Оплата</SectionLabel>
+          <MenuItem
+            icon={CreditCard} label="Карты"
+            right={<Badge variant="neutral" size="sm">{methods?.length ?? 0}</Badge>}
+            onClick={() => navigate("/profile/bind-card")}
+          />
+          <MenuItem
+            icon={Mail} label="Email для чеков"
+            onClick={() => navigate("/profile/email")}
+          />
+        </div>
 
-      {/* Support (placeholder) */}
-      <ProfileSection
-        icon={MessageCircle}
-        title="Чат поддержки"
-        right={<Badge variant="neutral" size="sm">Скоро</Badge>}
-        disabled
-      />
+        <div className="flex flex-col gap-8">
+          <SectionLabel>Верификация</SectionLabel>
+          <MenuItem
+            icon={History} label="Верификация KYC"
+            right={<Badge variant={user?.kyc_status === "approved" ? "success" : "neutral"} size="sm">{kycLabel}</Badge>}
+            onClick={() => navigate("/kyc")}
+          />
+        </div>
 
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-12 px-16 py-12 body text-danger hover:bg-danger-bg rounded-lg transition-colors"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
+        <div className="flex flex-col gap-8">
+          <SectionLabel>Поддержка</SectionLabel>
+          <MenuItem
+            icon={MessageCircle} label="Чат поддержки"
+            right={<span className="caption text-ink-400">Скоро</span>}
+          />
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-12 px-16 py-12 body text-danger"
+        >
+          <LogOut size={18} />
+          Выйти
+        </button>
+      </div>
     </div>
   );
 }
 
-function ProfileSection({
-  icon: Ico,
-  title,
-  right,
-  onClick,
-  disabled,
-}: {
-  icon: React.ComponentType<any>;
-  title: string;
-  right?: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Card
-      variant="elevated"
-      padding={16}
-      onClick={disabled ? undefined : onClick}
-      style={{ cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.6 : 1 }}
-    >
-      <div className="flex items-center gap-12">
-        <div className="w-36 h-36 rounded-full bg-ink-100 flex items-center justify-center shrink-0">
-          <Ico size={18} />
-        </div>
-        <span className="flex-1 body font-medium">{title}</span>
-        {right}
-      </div>
-    </Card>
-  );
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="caption text-ink-400 uppercase tracking-wider m-0 px-4">{children}</p>;
 }
 
-const KYC_LABELS: Record<string, { label: string; variant: "success" | "warning" | "danger" | "info" | "neutral" }> = {
-  approved: { label: "Верифицирован", variant: "success" },
-  pending: { label: "На проверке", variant: "info" },
-  rejected: { label: "Отклонено", variant: "danger" },
-  resubmit_requested: { label: "Нужно переснять", variant: "warning" },
-  draft: { label: "Не завершено", variant: "neutral" },
-  none: { label: "Не пройдена", variant: "neutral" },
-};
-
-function KycStatusBlock({ kycStatus }: { kycStatus?: string }) {
-  const navigate = useNavigate();
-  const status = kycStatus || "none";
-  const info = KYC_LABELS[status] || KYC_LABELS["none"]!;
-  const actionable = status !== "approved" && status !== "pending";
-
+function MenuItem({
+  icon: Ico, label, right, onClick,
+}: {
+  icon: React.ComponentType<any>;
+  label: string;
+  right?: React.ReactNode;
+  onClick?: () => void;
+}) {
   return (
-    <Card
-      variant={status === "approved" ? "filled" : "outlined"}
-      padding={16}
-      onClick={actionable ? () => navigate("/kyc") : undefined}
-      style={{ cursor: actionable ? "pointer" : "default" }}
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-12 bg-ink-0 text-left transition-colors hover:bg-ink-50"
+      style={{ padding: "12px 16px", borderRadius: 14, border: `1px solid ${colors.ink[100]}` }}
     >
-      <div className="flex items-center gap-12">
-        <div
-          className="rounded-full bg-ink-100 flex items-center justify-center shrink-0"
-          style={{ width: 36, height: 36 }}
-        >
-          <Shield size={18} />
-        </div>
-        <div className="flex-1">
-          <span className="body font-medium">Верификация</span>
-          {actionable && (
-            <div className="caption text-ink-500">Нажми, чтобы продолжить</div>
-          )}
-        </div>
-        <Badge variant={info.variant} size="sm">{info.label}</Badge>
-      </div>
-    </Card>
+      <Ico size={18} className="text-ink-500 shrink-0" />
+      <span className="flex-1 body">{label}</span>
+      {right}
+      <ChevronRight size={16} className="text-ink-300 shrink-0" />
+    </button>
   );
 }

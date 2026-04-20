@@ -1,16 +1,26 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function useVideoRecorder(durationMs = 3000) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [recording, setRecording] = useState(false);
   const [video, setVideo] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
 
     for (let retry = 0; retry < 3; retry++) {
       if (retry > 0) await sleep(500 * retry);
@@ -19,6 +29,7 @@ export function useVideoRecorder(durationMs = 3000) {
           video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
+        streamRef.current = s;
         setStream(s);
         if (videoRef.current) {
           videoRef.current.srcObject = s;
@@ -34,9 +45,9 @@ export function useVideoRecorder(durationMs = 3000) {
   }, []);
 
   const record = useCallback(() => {
-    if (!stream) return;
+    if (!streamRef.current) return;
     setRecording(true);
-    const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+    const recorder = new MediaRecorder(streamRef.current, { mimeType: "video/webm" });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.onstop = () => {
@@ -44,16 +55,19 @@ export function useVideoRecorder(durationMs = 3000) {
       setRecording(false);
     };
     recorder.start();
-    setTimeout(() => recorder.stop(), durationMs);
-  }, [stream, durationMs]);
+    setTimeout(() => {
+      if (recorder.state === "recording") recorder.stop();
+    }, durationMs);
+  }, [durationMs]);
 
   const stop = useCallback(() => {
-    stream?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream]);
+  }, []);
 
   const reset = useCallback(() => {
     setVideo(null);
