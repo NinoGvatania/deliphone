@@ -4,11 +4,9 @@ import { api } from "@/api/client";
 
 type UserBrief = {
   id: string;
-  telegram_id: number;
-  telegram_username: string | null;
-  telegram_first_name: string | null;
-  telegram_photo_url: string | null;
-  kyc_status: string;
+  phone_number: string;
+  first_name: string;
+  email: string | null;
   status: string;
 };
 

@@ -1,7 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthPage } from "@/pages/AuthPage";
-import { AuthRegSuccessPage } from "@/pages/AuthRegSuccessPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { MapPage } from "@/pages/MapPage";
 import { ScanPage } from "@/pages/ScanPage";
@@ -10,9 +9,6 @@ import { RentalsListPage } from "@/pages/RentalsListPage";
 import { ActiveRentalPage } from "@/pages/rental/ActiveRentalPage";
 import { ReturnPage } from "@/pages/rental/ReturnPage";
 import { IncidentPage } from "@/pages/rental/IncidentPage";
-import { KycFlowPage } from "@/pages/kyc/KycFlowPage";
-import { KycPendingPage } from "@/pages/kyc/KycPendingPage";
-import { KycRejectedPage } from "@/pages/kyc/KycRejectedPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { SubscriptionPage } from "@/pages/profile/SubscriptionPage";
 import { EmailPage } from "@/pages/profile/EmailPage";
@@ -20,6 +16,8 @@ import { BindCardPage } from "@/pages/profile/BindCardPage";
 import { FoundDevicePage } from "@/pages/FoundDevicePage";
 import { ChatListPage } from "@/pages/support/ChatListPage";
 import { ChatPage } from "@/pages/support/ChatPage";
+import { ActivationScanPage } from "@/pages/activation/ActivationScanPage";
+import { ActivationPayPage } from "@/pages/activation/ActivationPayPage";
 
 export const router = createBrowserRouter([
   // Main — full screen map
@@ -48,14 +46,11 @@ export const router = createBrowserRouter([
 
   // Auth
   { path: "/auth", element: <AuthPage /> },
-  { path: "/auth/reg/:sessionId", element: <AuthPage /> },
-  { path: "/auth/reg-success", element: <AuthRegSuccessPage /> },
   { path: "/onboarding", element: <OnboardingPage /> },
 
-  // KYC
-  { path: "/kyc", element: <KycFlowPage /> },
-  { path: "/kyc/pending", element: <KycPendingPage /> },
-  { path: "/kyc/rejected", element: <KycRejectedPage /> },
+  // Activation (pre-activation QR payment)
+  { path: "/activate", element: <ActivationScanPage /> },
+  { path: "/activate/pay", element: <ActivationPayPage /> },
 
   // Support chat
   { path: "/support", element: <ChatListPage /> },

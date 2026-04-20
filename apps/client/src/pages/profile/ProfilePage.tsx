@@ -9,8 +9,9 @@ import {
   LogOut,
   Mail,
   MessageCircle,
-  Shield,
   Smartphone,
+  Trash2,
+  User,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { paymentsApi } from "@/api/payments";
@@ -37,17 +38,17 @@ export function ProfilePage() {
     queryFn: () => rentalsApi.list("history"),
   });
 
+  const { data: activeRentals } = useQuery({
+    queryKey: ["rentals-active"],
+    queryFn: () => rentalsApi.list("active"),
+  });
+
+  const hasActiveRentals = (activeRentals?.total ?? 0) > 0;
+
   const handleLogout = () => {
     logout();
     navigate("/auth");
   };
-
-  const kycLabel = {
-    approved: "Верифицирован",
-    pending: "На проверке",
-    rejected: "Отклонено",
-    none: "Не пройдена",
-  }[user?.kyc_status ?? "none"] ?? user?.kyc_status;
 
   return (
     <div className="min-h-screen bg-ink-50">
@@ -62,23 +63,14 @@ export function ProfilePage() {
       <div className="px-16 py-20 flex flex-col gap-20 max-w-[480px] mx-auto">
         {/* User card */}
         <div className="flex items-center gap-16">
-          {user?.telegram_photo_url ? (
-            <img src={user.telegram_photo_url} alt="" className="rounded-full object-cover" style={{ width: 56, height: 56 }} />
-          ) : (
-            <div className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold" style={{ width: 56, height: 56, fontSize: 22 }}>
-              {user?.telegram_first_name?.[0] ?? "?"}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="h3 truncate">{user?.telegram_first_name ?? "Пользователь"}</div>
-            {user?.telegram_username && <div className="body-sm text-ink-500">@{user.telegram_username}</div>}
+          <div className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold" style={{ width: 56, height: 56, fontSize: 22 }}>
+            {user?.first_name?.[0] ?? "?"}
           </div>
-          <Badge
-            variant={user?.kyc_status === "approved" ? "success" : "neutral"}
-            size="sm"
-          >
-            {kycLabel}
-          </Badge>
+          <div className="flex-1 min-w-0">
+            <div className="h3 truncate">{user?.first_name ?? "Пользователь"}</div>
+            <div className="body-sm text-ink-500">{user?.phone_number}</div>
+            {user?.email && <div className="body-sm text-ink-400">{user.email}</div>}
+          </div>
         </div>
 
         {/* Sections */}
@@ -90,7 +82,7 @@ export function ProfilePage() {
             onClick={() => navigate("/rentals")}
           />
           <MenuItem
-            icon={Shield} label="Подписка «Удобно»"
+            icon={User} label="Подписка «Удобно»"
             right={subscription?.status === "active"
               ? <Badge variant="accent" size="sm">Активна</Badge>
               : <span className="caption text-ink-400">199 ₽/мес</span>}
@@ -105,6 +97,11 @@ export function ProfilePage() {
             right={<Badge variant="neutral" size="sm">{methods?.length ?? 0}</Badge>}
             onClick={() => navigate("/profile/bind-card")}
           />
+          {methods && methods.length > 0 && hasActiveRentals && (
+            <p className="body-sm text-ink-400 px-4 m-0">
+              Нельзя отвязать единственную карту при активной аренде
+            </p>
+          )}
           <MenuItem
             icon={Mail} label="Email для чеков"
             onClick={() => navigate("/profile/email")}
@@ -112,26 +109,34 @@ export function ProfilePage() {
         </div>
 
         <div className="flex flex-col gap-8">
-          <SectionLabel>Верификация</SectionLabel>
-          <MenuItem
-            icon={History} label="Верификация KYC"
-            right={<Badge variant={user?.kyc_status === "approved" ? "success" : "neutral"} size="sm">{kycLabel}</Badge>}
-            onClick={() => navigate("/kyc")}
-          />
-        </div>
-
-        <div className="flex flex-col gap-8">
           <SectionLabel>Поддержка</SectionLabel>
           <MenuItem
             icon={MessageCircle} label="Чат поддержки"
-            right={<span className="caption text-ink-400">Скоро</span>}
+            onClick={() => navigate("/support")}
           />
+        </div>
+
+        {/* Delete account */}
+        <div className="flex flex-col gap-8">
+          <button
+            onClick={() => {/* TODO: delete account API */}}
+            disabled={hasActiveRentals}
+            className="flex items-center gap-12 px-16 py-12 body text-danger disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={18} />
+            Удалить аккаунт
+          </button>
+          {hasActiveRentals && (
+            <p className="body-sm text-danger px-16 m-0">
+              Нельзя удалить аккаунт при активной аренде
+            </p>
+          )}
         </div>
 
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-12 px-16 py-12 body text-danger"
+          className="flex items-center gap-12 px-16 py-12 body text-ink-500"
         >
           <LogOut size={18} />
           Выйти

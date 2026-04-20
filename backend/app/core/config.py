@@ -51,13 +51,13 @@ class Settings(BaseSettings):
     JWT_REFRESH_TTL_DAYS: int = 30
     JWT_TEMP_TTL_MINUTES: int = 5
 
-    # --- Telegram bot ---
+    # --- SMS ---
+    SMS_PROVIDER: str = "dev"
+
+    # --- Telegram bot (notifications only) ---
     TG_BOT_TOKEN: str = ""
     TG_BOT_USERNAME: str = ""
     TG_BOT_DRY_RUN: bool = True
-
-    # --- KYC encryption (32-byte base64 key) ---
-    KYC_ENCRYPTION_KEY: str = ""
 
     # --- CORS ---
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175"

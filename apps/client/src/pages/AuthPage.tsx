@@ -1,95 +1,110 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Logo, Card, Spinner } from "@deliphone/ui";
-import { MessageCircle } from "lucide-react";
+import { Phone } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/api/client";
 
-const TG_BOT = import.meta.env.VITE_TG_BOT_USERNAME || "DeliphoneBot";
-
 export function AuthPage() {
   const navigate = useNavigate();
-  const { sessionId } = useParams<{ sessionId?: string }>();
-  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
   const isAuth = useAuthStore((s) => s.isAuthenticated)();
-  const user = useAuthStore((s) => s.user);
-  const widgetRef = useRef<HTMLDivElement>(null);
+
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [phone, setPhone] = useState("+7");
+  const [code, setCode] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const scriptAdded = useRef(false);
 
-  // If already logged in — always go to map
   useEffect(() => {
     if (isAuth) {
       navigate("/", { replace: true });
     }
   }, [isAuth, navigate]);
 
-  async function handleTelegramData(tgUser: Record<string, unknown>) {
+  function formatPhone(value: string): string {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length <= 1) return "+7";
+    const rest = digits.slice(1, 11);
+    let formatted = "+7";
+    if (rest.length > 0) formatted += ` (${rest.slice(0, 3)}`;
+    if (rest.length >= 3) formatted += ")";
+    if (rest.length > 3) formatted += ` ${rest.slice(3, 6)}`;
+    if (rest.length > 6) formatted += `-${rest.slice(6, 8)}`;
+    if (rest.length > 8) formatted += `-${rest.slice(8, 10)}`;
+    return formatted;
+  }
+
+  function getRawPhone(): string {
+    return "+" + phone.replace(/\D/g, "");
+  }
+
+  async function handleSendCode() {
+    const raw = getRawPhone();
+    if (raw.length !== 12) {
+      setError("Введи номер полностью");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const body = { ...tgUser, reg_session_id: sessionId || undefined };
-      const res = await api.post<any>("/client/auth/telegram", body);
-      setAuth(res);
-
-      if (sessionId) {
-        navigate("/auth/reg-success", { replace: true });
-        return;
-      }
-      navigate("/", { replace: true });
+      const res = await api.post<{ is_new_user: boolean }>(
+        "/client/auth/register/send-code",
+        { phone: raw },
+      );
+      setIsNewUser(res.is_new_user);
+      setStep("code");
     } catch (e: any) {
-      setError(e.message || "Ошибка авторизации");
+      setError(e.message || "Не удалось отправить код");
+    } finally {
       setLoading(false);
     }
   }
 
-  // Handle OAuth redirect callback (?id=...&hash=...)
-  useEffect(() => {
-    const tgId = searchParams.get("id");
-    const tgHash = searchParams.get("hash");
-    if (tgId && tgHash) {
-      handleTelegramData({
-        id: Number(tgId),
-        first_name: searchParams.get("first_name") || "",
-        last_name: searchParams.get("last_name") || undefined,
-        username: searchParams.get("username") || undefined,
-        photo_url: searchParams.get("photo_url") || undefined,
-        auth_date: Number(searchParams.get("auth_date") || 0),
-        hash: tgHash,
-      });
+  async function handleVerify() {
+    if (code.length !== 4) {
+      setError("Введи 4-значный код");
+      return;
     }
-  }, []);
-
-  // Load Telegram Login Widget
-  useEffect(() => {
-    (window as any).onTelegramAuth = (tgUser: any) => handleTelegramData(tgUser);
-
-    if (widgetRef.current && !scriptAdded.current) {
-      scriptAdded.current = true;
-      const script = document.createElement("script");
-      script.src = "https://telegram.org/js/telegram-widget.js?22";
-      script.setAttribute("data-telegram-login", TG_BOT);
-      script.setAttribute("data-size", "large");
-      script.setAttribute("data-radius", "20");
-      script.setAttribute("data-onauth", "onTelegramAuth(user)");
-      script.setAttribute("data-request-access", "write");
-      script.async = true;
-      widgetRef.current.appendChild(script);
+    if (isNewUser && !firstName.trim()) {
+      setError("Укажи имя");
+      return;
     }
+    if (isNewUser && !consent) {
+      setError("Необходимо согласие на обработку данных");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const body: Record<string, string> = {
+        phone: getRawPhone(),
+        code,
+      };
+      if (isNewUser) {
+        body.first_name = firstName.trim();
+        if (email.trim()) body.email = email.trim();
+      }
+      const res = await api.post<any>("/client/auth/register/verify", body);
+      setAuth(res);
+      navigate("/", { replace: true });
+    } catch (e: any) {
+      setError(e.message || "Неверный код");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    return () => {
-      delete (window as any).onTelegramAuth;
-    };
-  }, []);
-
-  if (loading) {
+  if (loading && step === "phone") {
     return (
       <div className="min-h-screen bg-ink-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-16">
           <Spinner size={32} />
-          <p className="body text-ink-500">Входим...</p>
+          <p className="body text-ink-500">Отправляем код...</p>
         </div>
       </div>
     );
@@ -106,38 +121,104 @@ export function AuthPage() {
               className="rounded-full bg-accent flex items-center justify-center"
               style={{ width: 48, height: 48 }}
             >
-              <MessageCircle size={24} className="text-accent-ink" />
+              <Phone size={24} className="text-accent-ink" />
             </div>
-            <h1 className="h2 m-0">Войди, чтобы начать</h1>
-            <p className="body text-ink-500 m-0">
-              Авторизация через Telegram, без SMS и паролей
-            </p>
 
-            {/* Telegram Login Widget renders here */}
-            <div ref={widgetRef} className="min-h-[44px]" />
+            {step === "phone" && (
+              <>
+                <h1 className="h2 m-0">Войди, чтобы начать</h1>
+                <p className="body text-ink-500 m-0">
+                  Введи номер телефона — пришлём код в SMS
+                </p>
+
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhone(e.target.value))}
+                  placeholder="+7 (900) 123-45-67"
+                  className="w-full px-16 py-12 rounded-full border border-ink-200 bg-ink-0 body text-ink-900 text-center outline-none focus:border-accent"
+                />
+
+                <button
+                  onClick={handleSendCode}
+                  disabled={loading}
+                  className="w-full px-16 py-12 rounded-full bg-accent text-accent-ink body font-semibold transition-opacity disabled:opacity-50"
+                >
+                  Получить код
+                </button>
+              </>
+            )}
+
+            {step === "code" && (
+              <>
+                <h1 className="h2 m-0">Код из SMS</h1>
+                <p className="body text-ink-500 m-0">
+                  Отправили на {phone}
+                </p>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="0000"
+                  className="w-full px-16 py-12 rounded-full border border-ink-200 bg-ink-0 body text-ink-900 text-center tracking-[0.5em] outline-none focus:border-accent"
+                  autoFocus
+                />
+
+                {isNewUser && (
+                  <>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Имя"
+                      className="w-full px-16 py-12 rounded-full border border-ink-200 bg-ink-0 body text-ink-900 text-center outline-none focus:border-accent"
+                    />
+
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email (необязательно)"
+                      className="w-full px-16 py-12 rounded-full border border-ink-200 bg-ink-0 body text-ink-900 text-center outline-none focus:border-accent"
+                    />
+
+                    <label className="flex items-start gap-8 text-left cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => setConsent(e.target.checked)}
+                        className="mt-4 shrink-0"
+                      />
+                      <span className="body-sm text-ink-500">
+                        Соглашаюсь на обработку персональных данных и принимаю условия оферты
+                      </span>
+                    </label>
+                  </>
+                )}
+
+                <button
+                  onClick={handleVerify}
+                  disabled={loading}
+                  className="w-full px-16 py-12 rounded-full bg-accent text-accent-ink body font-semibold transition-opacity disabled:opacity-50"
+                >
+                  {loading ? "Проверяем..." : "Подтвердить"}
+                </button>
+
+                <button
+                  onClick={() => { setStep("phone"); setCode(""); setError(null); }}
+                  className="body-sm text-ink-500 underline"
+                >
+                  Изменить номер
+                </button>
+              </>
+            )}
 
             {error && <p className="body-sm text-danger m-0">{error}</p>}
-
-            <details className="w-full">
-              <summary className="body-sm text-ink-500 cursor-pointer text-center">
-                У меня нет Telegram
-              </summary>
-              <p className="body-sm text-ink-500 mt-8">
-                Регистрация только через Telegram. Если его нет — установи
-                бесплатно в{" "}
-                <a href="https://apps.apple.com/app/telegram-messenger/id686449807" className="underline">App Store</a>{" "}
-                или{" "}
-                <a href="https://play.google.com/store/apps/details?id=org.telegram.messenger" className="underline">Google Play</a>.
-              </p>
-            </details>
           </div>
         </Card>
-
-        {sessionId && (
-          <p className="body-sm text-ink-500 text-center">
-            Регистрация через партнёрскую точку
-          </p>
-        )}
       </div>
     </div>
   );
