@@ -17,6 +17,9 @@ import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { SubscriptionPage } from "@/pages/profile/SubscriptionPage";
 import { EmailPage } from "@/pages/profile/EmailPage";
 import { BindCardPage } from "@/pages/profile/BindCardPage";
+import { FoundDevicePage } from "@/pages/FoundDevicePage";
+import { ChatListPage } from "@/pages/support/ChatListPage";
+import { ChatPage } from "@/pages/support/ChatPage";
 
 export const router = createBrowserRouter([
   // Main — full screen map
@@ -53,6 +56,13 @@ export const router = createBrowserRouter([
   { path: "/kyc", element: <KycFlowPage /> },
   { path: "/kyc/pending", element: <KycPendingPage /> },
   { path: "/kyc/rejected", element: <KycRejectedPage /> },
+
+  // Support chat
+  { path: "/support", element: <ChatListPage /> },
+  { path: "/support/:chatId", element: <ChatPage /> },
+
+  // Found device (QR scan by finder)
+  { path: "/found/:code", element: <FoundDevicePage /> },
 
   // Partner card binding QR
   { path: "/c/:token", element: <BindCardPage /> },
