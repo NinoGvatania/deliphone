@@ -39,8 +39,11 @@ class Partner(Base):
     contract_number: Mapped[str | None] = mapped_column(String(50))
     contract_signed_at: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
+    commission_percent: Mapped[float] = mapped_column(
+        Numeric(5, 2), default=30.00, server_default="30.00"
+    )
     rating: Mapped[float] = mapped_column(
-        Numeric(5, 2), default=70.00, server_default="70.00"
+        Numeric(5, 2), default=100.00, server_default="100.00"
     )
     device_limit: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     balance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, server_default="0")

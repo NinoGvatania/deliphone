@@ -1,4 +1,4 @@
-"""Catalog models: Tariff, Device, DeviceMovement, DamagePricing (§13.2)."""
+"""Catalog models: Tariff, Device, DeviceMovement (§13.2)."""
 
 from __future__ import annotations
 
@@ -81,6 +81,13 @@ class Device(Base):
     back_cover_type: Mapped[str | None] = mapped_column(String(20))
     back_cover_installed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
+    # MDM fields
+    mdm_device_name: Mapped[str | None] = mapped_column(String(255))
+    mdm_enrolled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    mdm_policy_name: Mapped[str | None] = mapped_column(String(100))
+    mdm_last_sync: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    mdm_compliance: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown", server_default="unknown")
+
     status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
@@ -110,20 +117,6 @@ class DeviceMovement(Base):
     started_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     notes: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
-class DamagePricing(Base):
-    __tablename__ = "damage_pricing"
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    device_model: Mapped[str | None] = mapped_column(String(100))
-    category: Mapped[str | None] = mapped_column(String(50))
-    subcategory: Mapped[str | None] = mapped_column(String(50))
-    price: Mapped[float] = mapped_column(Numeric(8, 2), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )

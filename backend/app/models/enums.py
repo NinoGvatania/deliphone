@@ -5,14 +5,6 @@ from __future__ import annotations
 from enum import StrEnum
 
 
-class KycStatus(StrEnum):
-    NONE = "none"
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    RESUBMIT_REQUESTED = "resubmit_requested"
-
-
 class UserStatus(StrEnum):
     ACTIVE = "active"
     SUSPENDED_DEBT = "suspended_debt"
@@ -91,17 +83,16 @@ class DeviceMovementType(StrEnum):
 
 
 class RentalStatus(StrEnum):
-    BOOKED = "booked"
     PENDING_ACTIVATION = "pending_activation"
     ACTIVE = "active"
-    PAUSED_PAYMENT_FAILED = "paused_payment_failed"
-    OVERDUE = "overdue"
-    FROZEN_INCIDENT = "frozen_incident"
-    PENDING_RETURN_DISPUTE = "pending_return_dispute"
-    CLOSED = "closed"
+    GRACE_PERIOD = "grace_period"
+    LOCKED_OVERDUE = "locked_overdue"
+    PENDING_RETURN = "pending_return"
+    CLOSED_RETURNED = "closed_returned"
+    CLOSED_WITH_DEBT = "closed_with_debt"
+    EXPIRED_MAX_DURATION = "expired_max_duration"
     CLOSED_INCIDENT = "closed_incident"
-    CANCELLED_TIMEOUT = "cancelled_timeout"
-    CANCELLED_MANUAL = "cancelled_manual"
+    CANCELLED = "cancelled"
 
 
 class PaymentType(StrEnum):

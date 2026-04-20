@@ -51,6 +51,10 @@ class Rental(TimestampMixin, Base):
     )
     closed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
+    daily_rate_kopecks: Mapped[int] = mapped_column(Integer, nullable=False, default=34900, server_default="34900")
+    locked_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    debt_amount_kopecks: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
     deposit_amount: Mapped[float | None] = mapped_column(Numeric(10, 2))
     deposit_payment_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("payments.id")
