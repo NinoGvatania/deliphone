@@ -79,6 +79,14 @@ format: ## Ruff + prettier where present
 	cd backend && uv run ruff format .
 	pnpm -r format --if-present
 
+# -------- MDM --------
+.PHONY: mdm-health seed-mdm-policies
+mdm-health: ## Check MDM connection
+	$(COMPOSE) exec $(BACKEND_SVC) python -c "import asyncio; from app.services.android_mdm import get_mdm_client; print(asyncio.run(get_mdm_client().health_check()))"
+
+seed-mdm-policies: ## Create/update MDM policies
+	$(COMPOSE) exec $(BACKEND_SVC) python -c "import asyncio; from app.services.mdm_policies import ensure_policies; print(asyncio.run(ensure_policies()))"
+
 # -------- shortcuts --------
 .PHONY: logs shell
 logs: ## Tail backend logs

@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.v1.admin.analytics import router as analytics_router
 from app.api.v1.admin.audit_log import router as audit_log_router
+from app.api.v1.admin.mdm import router as mdm_router
 from app.api.v1.admin.audits import router as audits_router
 from app.api.v1.admin.auth import router as auth_router
 from app.api.v1.admin.dashboard import router as dashboard_router
@@ -40,3 +41,4 @@ router.include_router(settings_router)
 router.include_router(audit_log_router)
 router.include_router(analytics_router)
 router.include_router(support_router)
+router.include_router(mdm_router)
