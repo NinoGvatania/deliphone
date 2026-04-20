@@ -18,6 +18,7 @@ from app.api.v1.admin.rentals import router as rentals_router
 from app.api.v1.admin.service import router as service_router
 from app.api.v1.admin.settings import router as settings_router
 from app.api.v1.admin.subscriptions import router as subscriptions_router
+from app.api.v1.admin.support import router as support_router
 from app.api.v1.admin.users import router as users_router
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -38,3 +39,4 @@ router.include_router(finance_router)
 router.include_router(settings_router)
 router.include_router(audit_log_router)
 router.include_router(analytics_router)
+router.include_router(support_router)
