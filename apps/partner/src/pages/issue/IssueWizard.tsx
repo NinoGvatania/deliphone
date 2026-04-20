@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { Button, Card, Spinner, Logo, AppHeader } from "@deliphone/ui";
 import { issueApi } from "@/api/partner";
-import { Html5Qrcode } from "html5-qrcode";
 import SignatureCanvas from "react-signature-canvas";
+import { QrScanner } from "@/components/QrScanner";
 
 type Step =
   | "scan-client"
@@ -214,54 +214,13 @@ export function IssueWizard() {
 
 // --- Sub-steps ---
 
-function ScanClientStep({
-  onScanned,
-  loading,
-}: {
-  onScanned: (qr: string) => void;
-  loading: boolean;
-}) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerId = "qr-reader-issue";
-
-  useEffect(() => {
-    const scanner = new Html5Qrcode(containerId);
-    scannerRef.current = scanner;
-
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 300, height: 300 } },
-        (text) => {
-          scanner.stop().catch(() => {});
-          onScanned(text);
-        },
-        () => {},
-      )
-      .catch(() => {});
-
-    return () => {
-      scanner.stop().catch(() => {});
-    };
-  }, [onScanned]);
-
+function ScanClientStep({ onScanned }: { onScanned: (qr: string) => void; loading: boolean }) {
   return (
-    <Card variant="outlined" padding={32} className="flex flex-col items-center gap-24">
-      <QrCode size={48} className="text-ink-400" />
-      <p className="body text-ink-700 text-center">
-        Попросите клиента показать QR-код из приложения
-      </p>
-      <div
-        id={containerId}
-        className="w-full max-w-[400px] aspect-square rounded-12 overflow-hidden"
-      />
-      {loading && (
-        <div className="flex items-center gap-8">
-          <Spinner size={16} />
-          <span className="body-sm text-ink-400">Проверка...</span>
-        </div>
-      )}
-    </Card>
+    <QrScanner
+      onScanned={onScanned}
+      label="Попросите клиента показать QR-код из приложения"
+      placeholder="ID аренды"
+    />
   );
 }
 
@@ -302,95 +261,20 @@ function IdentityStep({
   );
 }
 
-function ScanDeviceStep({
-  onScanned,
-  loading,
-}: {
-  onScanned: (imei: string, serial: string) => void;
-  loading: boolean;
-}) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerId = "qr-reader-device";
-  const [imei, setImei] = useState("");
-  const [serial, setSerial] = useState("");
-  const [useManual, setUseManual] = useState(false);
-
-  useEffect(() => {
-    if (useManual) return;
-    const scanner = new Html5Qrcode(containerId);
-    scannerRef.current = scanner;
-
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 300, height: 300 } },
-        (text) => {
-          scanner.stop().catch(() => {});
-          try {
-            const parsed = JSON.parse(text);
-            onScanned(parsed.imei ?? text, parsed.serial ?? "");
-          } catch {
-            onScanned(text, "");
-          }
-        },
-        () => {},
-      )
-      .catch(() => setUseManual(true));
-
-    return () => {
-      scanner.stop().catch(() => {});
-    };
-  }, [onScanned, useManual]);
-
-  if (useManual) {
-    return (
-      <Card variant="outlined" padding={32} className="flex flex-col gap-24">
-        <ScanLine size={48} className="text-ink-400 mx-auto" />
-        <p className="body text-ink-700 text-center">Введите IMEI и серийный номер устройства</p>
-        <input
-          value={imei}
-          onChange={(e) => setImei(e.target.value)}
-          placeholder="IMEI"
-          className="w-full body p-12 border border-ink-200 rounded-12 bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent"
-        />
-        <input
-          value={serial}
-          onChange={(e) => setSerial(e.target.value)}
-          placeholder="Серийный номер"
-          className="w-full body p-12 border border-ink-200 rounded-12 bg-white text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent"
-        />
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          onClick={() => onScanned(imei, serial)}
-          loading={loading}
-          disabled={!imei.trim()}
-        >
-          Подтвердить
-        </Button>
-      </Card>
-    );
-  }
-
+function ScanDeviceStep({ onScanned }: { onScanned: (imei: string, serial: string) => void; loading: boolean }) {
   return (
-    <Card variant="outlined" padding={32} className="flex flex-col items-center gap-24">
-      <ScanLine size={48} className="text-ink-400" />
-      <p className="body text-ink-700 text-center">Отсканируйте QR/штрихкод устройства</p>
-      <div
-        id={containerId}
-        className="w-full max-w-[400px] aspect-square rounded-12 overflow-hidden"
-      />
-      <Button variant="ghost" size="lg" onClick={() => setUseManual(true)}>
-        Ввести вручную
-      </Button>
-      {loading && (
-        <div className="flex items-center gap-8">
-          <Spinner size={16} />
-          <span className="body-sm text-ink-400">Проверка...</span>
-        </div>
-      )}
-    </Card>
+    <QrScanner
+      onScanned={(text) => {
+        try {
+          const parsed = JSON.parse(text);
+          onScanned(parsed.imei ?? text, parsed.serial ?? "");
+        } catch {
+          onScanned(text, "");
+        }
+      }}
+      label="Отсканируйте QR устройства или введите IMEI"
+      placeholder="IMEI устройства"
+    />
   );
 }
 

@@ -51,17 +51,13 @@ export function LoginPage() {
             label="Email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
+            onChange={setEmail}
           />
           <Input
             label="Пароль"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
+            onChange={setPassword}
           />
 
           {error && (

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -108,3 +109,85 @@ async def get_incident(
         description=incident.description,
         created_at=incident.created_at,
     )
+
+
+class DisputeRequest(BaseModel):
+    reason: str
+
+
+class PoliceReportUploadRequest(BaseModel):
+    police_report_number: str
+    police_report_url: str
+
+
+@router.post("/{incident_id}/accept")
+async def accept_incident_quote(
+    incident_id: uuid.UUID,
+    user: User = Depends(get_current_client),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Client accepts the damage quote — triggers charge from deposit/card (SPEC §10)."""
+    result = await session.execute(
+        select(Incident).where(Incident.id == incident_id, Incident.user_id == user.id)
+    )
+    incident = result.scalars().first()
+    if incident is None:
+        raise HTTPException(404, "incident not found")
+    if incident.client_charge is None:
+        raise HTTPException(400, "no quote to accept")
+    if incident.client_accepted_at is not None:
+        raise HTTPException(409, "already accepted")
+
+    incident.client_accepted_at = datetime.now(UTC)
+    incident.status = "resolved"
+    incident.resolution_type = "client_accepted"
+    incident.resolved_at = datetime.now(UTC)
+    await session.commit()
+    return {"status": "accepted"}
+
+
+@router.post("/{incident_id}/dispute")
+async def dispute_incident(
+    incident_id: uuid.UUID,
+    body: DisputeRequest,
+    user: User = Depends(get_current_client),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Client disputes the damage quote — escalates to manager review (SPEC §10)."""
+    result = await session.execute(
+        select(Incident).where(Incident.id == incident_id, Incident.user_id == user.id)
+    )
+    incident = result.scalars().first()
+    if incident is None:
+        raise HTTPException(404, "incident not found")
+    if incident.client_disputed_at is not None:
+        raise HTTPException(409, "already disputed")
+
+    incident.client_disputed_at = datetime.now(UTC)
+    incident.dispute_reason = body.reason
+    incident.status = "disputed"
+    await session.commit()
+    return {"status": "disputed"}
+
+
+@router.post("/{incident_id}/upload-police-report")
+async def upload_police_report(
+    incident_id: uuid.UUID,
+    body: PoliceReportUploadRequest,
+    user: User = Depends(get_current_client),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Upload police report for theft/loss incidents (SPEC §10)."""
+    result = await session.execute(
+        select(Incident).where(Incident.id == incident_id, Incident.user_id == user.id)
+    )
+    incident = result.scalars().first()
+    if incident is None:
+        raise HTTPException(404, "incident not found")
+    if incident.type not in ("loss", "theft"):
+        raise HTTPException(400, "police report only for loss/theft incidents")
+
+    incident.police_report_number = body.police_report_number
+    incident.police_report_url = body.police_report_url
+    await session.commit()
+    return {"status": "uploaded"}

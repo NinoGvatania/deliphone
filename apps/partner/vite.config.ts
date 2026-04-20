@@ -32,5 +32,12 @@ export default defineConfig({
   server: {
     port: Number(process.env.VITE_PARTNER_PORT ?? 5174),
     host: true,
+    allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
 });
