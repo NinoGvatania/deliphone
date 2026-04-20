@@ -104,7 +104,7 @@ async def dashboard_finances(
 
     expense_tax_usn = total_revenue * 0.06
     expense_yookassa = total_revenue * 0.028
-    expense_partner_commission = revenue_rentals * 0.20
+    expense_partner_commission = revenue_rentals * 0.30
     total_expenses = expense_tax_usn + expense_yookassa + expense_partner_commission
     net_profit = total_revenue - total_expenses
     margin_pct = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
