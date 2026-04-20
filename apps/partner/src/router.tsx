@@ -3,6 +3,8 @@ import { PartnerLayout } from "@/layouts/PartnerLayout";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { RegistrationWizard } from "@/pages/registration/RegistrationWizard";
+import { IssueWizard } from "@/pages/issue/IssueWizard";
+import { ReturnWizard } from "@/pages/return/ReturnWizard";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -14,4 +16,6 @@ export const router = createBrowserRouter([
     ],
   },
   { path: "/register", element: <RegistrationWizard /> },
+  { path: "/issue", element: <IssueWizard /> },
+  { path: "/return", element: <ReturnWizard /> },
 ]);
