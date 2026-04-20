@@ -5,6 +5,9 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { RegistrationWizard } from "@/pages/registration/RegistrationWizard";
 import { IssueWizard } from "@/pages/issue/IssueWizard";
 import { ReturnWizard } from "@/pages/return/ReturnWizard";
+import { InventoryPage } from "@/pages/InventoryPage";
+import { FinancePage } from "@/pages/FinancePage";
+import { SupportPage } from "@/pages/SupportPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -13,6 +16,9 @@ export const router = createBrowserRouter([
     element: <PartnerLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
+      { path: "inventory", element: <InventoryPage /> },
+      { path: "finance", element: <FinancePage /> },
+      { path: "support", element: <SupportPage /> },
     ],
   },
   { path: "/register", element: <RegistrationWizard /> },
