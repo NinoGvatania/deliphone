@@ -192,7 +192,7 @@ class DeviceCreateRequest(BaseModel):
     imei: str
     model: str = "Xiaomi Redmi A5"
     serial_number: str | None = None
-    short_code: str
+    short_code: str | None = None  # auto-generated if not provided
     color: str | None = None
     storage: str = "128GB"
     condition_grade: int | None = None

@@ -39,7 +39,7 @@ class AndroidMDMClient:
     def _get_token(self) -> str | None:
         if not self._credentials:
             return None
-        if self._credentials.expired:
+        if not self._credentials.token or self._credentials.expired:
             self._credentials.refresh(GoogleAuthRequest())
         return self._credentials.token
 

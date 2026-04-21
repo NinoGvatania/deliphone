@@ -107,12 +107,12 @@ export function DashboardPage() {
         <div className="grid grid-cols-3 gap-12">
           <StatCard
             label="Выручка"
-            value={`${stats.revenue_today.toLocaleString("ru-RU")} \u20BD`}
+            value={`${(stats.revenue_today ?? 0).toLocaleString("ru-RU")} \u20BD`}
           />
-          <StatCard label="Выдач сегодня" value={stats.rentals_today} />
+          <StatCard label="Выдач сегодня" value={stats.rentals_today ?? 0} />
           <StatCard
             label="Комиссия"
-            value={`${stats.commission_today.toLocaleString("ru-RU")} \u20BD`}
+            value={`${(stats.commission_today ?? 0).toLocaleString("ru-RU")} \u20BD`}
           />
         </div>
       </section>

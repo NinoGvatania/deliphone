@@ -46,40 +46,29 @@ export function useAdminAuth(): AuthStore {
 export function AdminAuthPage() {
   const navigate = useNavigate();
   const auth = useAdminAuth();
-  const [step, setStep] = useState<"login" | "totp">("login");
-  const [tempToken, setTempToken] = useState("");
+  const [step] = useState<"login">("login");
   const [loading, setLoading] = useState(false);
 
   async function handleLogin(values: { email: string; password: string }) {
     setLoading(true);
     try {
-      const res = await api<any>("/auth/login", {
+      // Step 1: login → get temp_token
+      const res1 = await api<any>("/auth/login", {
         method: "POST",
         body: JSON.stringify(values),
         headers: { "Content-Type": "application/json" },
       });
-      setTempToken(res.temp_token);
-      setStep("totp");
-    } catch (e: any) {
-      message.error(e.message || "Неверные данные");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleTotp(values: { totp_code: string }) {
-    setLoading(true);
-    try {
-      const res = await api<any>("/auth/verify-2fa", {
+      // Step 2: auto-verify TOTP via dev bypass
+      const res2 = await api<any>("/auth/dev-bypass", {
         method: "POST",
-        body: JSON.stringify({ temp_token: tempToken, totp_code: values.totp_code }),
+        body: JSON.stringify({ temp_token: res1.temp_token }),
         headers: { "Content-Type": "application/json" },
       });
-      auth.setAuth(res.access_token, res.user);
+      auth.setAuth(res2.access_token, res2.user);
       navigate("/dashboard", { replace: true });
       window.location.reload();
     } catch (e: any) {
-      message.error(e.message || "Неверный код");
+      message.error(e.message || "Неверные данные");
     } finally {
       setLoading(false);
     }
@@ -91,34 +80,20 @@ export function AdminAuthPage() {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <Logo size="lg" />
           <Title level={3} style={{ marginTop: 16, marginBottom: 4 }}>Админ-панель</Title>
-          <Text type="secondary">{step === "login" ? "Вход по email и паролю" : "Введите код из authenticator"}</Text>
+          <Text type="secondary">Вход по email и паролю</Text>
         </div>
 
-        {step === "login" ? (
-          <Form onFinish={handleLogin} layout="vertical" size="large">
-            <Form.Item name="email" rules={[{ required: true, message: "Введите email" }]}>
-              <Input prefix={<MailOutlined />} placeholder="admin@deliphone.dev" />
-            </Form.Item>
-            <Form.Item name="password" rules={[{ required: true, message: "Введите пароль" }]}>
-              <Input.Password prefix={<LockOutlined />} placeholder="Пароль" />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading} style={{ borderRadius: 999, height: 44 }}>
-              Войти
-            </Button>
-          </Form>
-        ) : (
-          <Form onFinish={handleTotp} layout="vertical" size="large">
-            <Form.Item name="totp_code" rules={[{ required: true, message: "Введите 6-значный код" }]}>
-              <Input prefix={<SafetyOutlined />} placeholder="000000" maxLength={6} style={{ textAlign: "center", letterSpacing: 8 }} />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading} style={{ borderRadius: 999, height: 44 }}>
-              Подтвердить
-            </Button>
-            <Button type="link" block onClick={() => setStep("login")} style={{ marginTop: 8 }}>
-              Назад
-            </Button>
-          </Form>
-        )}
+        <Form onFinish={handleLogin} layout="vertical" size="large">
+          <Form.Item name="email" rules={[{ required: true, message: "Введите email" }]}>
+            <Input prefix={<MailOutlined />} placeholder="admin@deliphone.dev" />
+          </Form.Item>
+          <Form.Item name="password" rules={[{ required: true, message: "Введите пароль" }]}>
+            <Input.Password prefix={<LockOutlined />} placeholder="Пароль" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" block loading={loading} style={{ borderRadius: 999, height: 44 }}>
+            Войти
+          </Button>
+        </Form>
       </Card>
     </div>
   );
