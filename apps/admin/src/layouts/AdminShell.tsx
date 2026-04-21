@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Layout, Menu } from "antd";
 import type { MenuProps } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@deliphone/ui";
 import { colors } from "@deliphone/ui/tokens";
 import { NAV } from "@/nav";
+import { useAdminAuth } from "@/pages/AuthPage";
 
 const { Sider, Content } = Layout;
 
@@ -14,9 +15,14 @@ const { Sider, Content } = Layout;
  * navigating (from anywhere) always keeps the right item highlighted.
  */
 export function AdminShell() {
+  const auth = useAdminAuth();
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  if (!auth.isAuthenticated()) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const selectedKey =
     NAV.find((n) => n.path === location.pathname)?.key ?? "dashboard";

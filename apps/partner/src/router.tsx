@@ -9,7 +9,7 @@ import { FinancePage } from "@/pages/FinancePage";
 import { SupportPage } from "@/pages/SupportPage";
 
 export const router = createBrowserRouter([
-  { path: "/login", element: <LoginPage /> },
+  { path: "/auth", element: <LoginPage /> },
   {
     path: "/",
     element: <PartnerLayout />,

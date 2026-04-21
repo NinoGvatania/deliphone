@@ -16,8 +16,10 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { AuditLogPage } from "@/pages/AuditLogPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { SupportPage } from "@/pages/SupportPage";
+import { AdminAuthPage } from "@/pages/AuthPage";
 
 export const router = createBrowserRouter([
+  { path: "/auth", element: <AdminAuthPage /> },
   {
     path: "/",
     element: <AdminShell />,

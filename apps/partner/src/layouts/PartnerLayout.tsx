@@ -22,7 +22,7 @@ export function PartnerLayout() {
   const { user, isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return (
