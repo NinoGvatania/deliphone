@@ -45,14 +45,14 @@ type Device = {
   imei: string;
   model: string;
   short_code: string;
-  custody: string;
+  custody: string | null;
   location: string;
   status: string;
   total_rentals: number;
   battery_level: number | null;
   photos: string[];
-  specs: Record<string, string>;
-  movements: { date: string; from: string; to: string; reason: string }[];
+  specs: Record<string, string> | null;
+  movements: { date: string; from: string; to: string; reason: string }[] | null;
   mdm?: {
     enrolled: boolean;
     compliance: boolean;
@@ -194,14 +194,14 @@ export function DevicesPage() {
     { title: "Код", dataIndex: "short_code", width: 80 },
     {
       title: "Хранение",
-      dataIndex: "custody",
-      render: (s: string) => <Tag color={CUSTODY_COLORS[s] ?? "default"}>{s}</Tag>,
+      dataIndex: "current_custody",
+      render: (s: string | null) => s ? <Tag color={CUSTODY_COLORS[s] ?? "default"}>{s}</Tag> : <Text type="secondary">—</Text>,
     },
     { title: "Точка", dataIndex: "location", ellipsis: true },
     {
       title: "Статус",
       dataIndex: "status",
-      render: (s: string) => <Tag color={STATUS_COLORS[s] ?? "default"}>{s}</Tag>,
+      render: (s: string | null) => s ? <Tag color={STATUS_COLORS[s] ?? "default"}>{s}</Tag> : <Text type="secondary">—</Text>,
     },
     { title: "Аренды", dataIndex: "total_rentals", width: 80 },
     {
@@ -342,7 +342,7 @@ export function DevicesPage() {
                 children: (
                   <Space direction="vertical" size={16} style={{ width: "100%" }}>
                     <Card title="Характеристики">
-                      {Object.entries(selected.specs).map(([k, v]) => (
+                      {Object.entries(selected.specs ?? {}).map(([k, v]) => (
                         <div key={k}>
                           <strong>{k}:</strong> {v}
                         </div>
@@ -351,7 +351,7 @@ export function DevicesPage() {
 
                     <Card title="Перемещения">
                       <Timeline
-                        items={selected.movements.map((m) => ({
+                        items={(selected.movements ?? []).map((m) => ({
                           children: `${m.date}: ${m.from} → ${m.to} (${m.reason})`,
                         }))}
                       />
@@ -625,17 +625,7 @@ function AddDeviceModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                 <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
                   Отсканируйте камерой нового устройства при первой настройке:
                 </Text>
-                {enrollMut.data.qr_code ? (
-                  <img
-                    src={`data:image/png;base64,${enrollMut.data.qr_code}`}
-                    alt="MDM QR"
-                    style={{ width: 200, height: 200, margin: "0 auto", display: "block" }}
-                  />
-                ) : enrollMut.data.token ? (
-                  <QrCanvas data={enrollMut.data.token} size={200} />
-                ) : (
-                  <Text type="warning">Токен не получен</Text>
-                )}
+                <QrCanvas data={enrollMut.data.qr_code || enrollMut.data.token || ""} size={250} />
               </div>
             )}
             {enrollMut.isError && (
@@ -696,16 +686,25 @@ function AddDeviceModal({ open, onClose, onCreated }: { open: boolean; onClose: 
 }
 
 function QrCanvas({ data, size = 250 }: { data: string; size?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!data || !canvasRef.current) return;
-    import("qrcode").then((QRCode) => {
-      QRCode.toCanvas(canvasRef.current, data, { width: size, margin: 2 }, (err: any) => {
-        if (err) console.error("QR render error:", err);
+    if (!data) return;
+    import("qrcode").then((mod) => {
+      const QRCode = mod.default || mod;
+      QRCode.toDataURL(data, { width: size, margin: 2 }, (err: any, url: string) => {
+        if (err) {
+          console.error("QR error:", err);
+          setError(err.message);
+        } else {
+          setSrc(url);
+        }
       });
-    });
+    }).catch((e) => setError(e.message));
   }, [data, size]);
 
-  return <canvas ref={canvasRef} style={{ display: "block", margin: "0 auto" }} />;
+  if (error) return <Text type="danger">QR ошибка: {error}</Text>;
+  if (!src) return <Spin />;
+  return <img src={src} alt="QR" style={{ width: size, height: size, display: "block", margin: "0 auto" }} />;
 }
