@@ -25,6 +25,7 @@ export type DeviceBrief = {
   color: string | null;
   storage: string | null;
   condition_grade: number | null;
+  battery_level: number | null;
 };
 
 export const locationsApi = {

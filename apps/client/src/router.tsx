@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthPage } from "@/pages/AuthPage";
+import { WelcomePage } from "@/pages/WelcomePage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { MapPage } from "@/pages/MapPage";
 import { ScanPage } from "@/pages/ScanPage";
@@ -13,6 +14,7 @@ import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { SubscriptionPage } from "@/pages/profile/SubscriptionPage";
 import { EmailPage } from "@/pages/profile/EmailPage";
 import { BindCardPage } from "@/pages/profile/BindCardPage";
+import { EditProfilePage } from "@/pages/profile/EditProfilePage";
 import { FoundDevicePage } from "@/pages/FoundDevicePage";
 import { ChatListPage } from "@/pages/support/ChatListPage";
 import { ChatPage } from "@/pages/support/ChatPage";
@@ -39,6 +41,7 @@ export const router = createBrowserRouter([
 
   // Profile & settings (full screen with back button)
   { path: "/profile", element: <ProfilePage /> },
+  { path: "/profile/edit", element: <EditProfilePage /> },
   { path: "/profile/subscription", element: <SubscriptionPage /> },
   { path: "/profile/email", element: <EmailPage /> },
   { path: "/profile/bind-card", element: <BindCardPage /> },
@@ -46,6 +49,7 @@ export const router = createBrowserRouter([
 
   // Auth
   { path: "/auth", element: <AuthPage /> },
+  { path: "/welcome", element: <WelcomePage /> },
   { path: "/onboarding", element: <OnboardingPage /> },
 
   // Activation (pre-activation QR payment)

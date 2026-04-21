@@ -198,20 +198,22 @@ export function MapPage() {
                 <Navigation size={16} /> Маршрут
               </button>
 
-              {selected.available_devices > 0 && (
-                <button
-                  onClick={() => navigate(`/rent/${selected.id}`)}
+              <button
+                  onClick={() => selected.available_devices > 0 && navigate(`/rent/${selected.id}`)}
+                  disabled={selected.available_devices === 0}
                   className="flex-1 flex items-center justify-center gap-8"
                   style={{
                     height: 44, borderRadius: 999,
-                    background: colors.ink[900], color: "#fff",
+                    background: selected.available_devices > 0 ? colors.ink[900] : colors.ink[200],
+                    color: selected.available_devices > 0 ? "#fff" : colors.ink[500],
                     fontWeight: 600, fontSize: 15,
-                    border: "none", cursor: "pointer",
+                    border: "none",
+                    cursor: selected.available_devices > 0 ? "pointer" : "not-allowed",
+                    opacity: selected.available_devices > 0 ? 1 : 0.6,
                   }}
                 >
-                  Взять здесь
+                  {selected.available_devices > 0 ? "Взять здесь" : "Нет устройств"}
                 </button>
-              )}
             </div>
           </div>
         </div>

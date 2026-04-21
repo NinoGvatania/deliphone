@@ -37,6 +37,7 @@ class UserBrief(BaseModel):
     id: UUID
     phone_number: str
     first_name: str
+    email: str | None = None
     status: str
 
     model_config = {"from_attributes": True}

@@ -62,7 +62,7 @@ export function ProfilePage() {
 
       <div className="px-16 py-20 flex flex-col gap-20 max-w-[480px] mx-auto">
         {/* User card */}
-        <div className="flex items-center gap-16">
+        <div className="flex items-center gap-16" onClick={() => navigate("/profile/edit")} style={{ cursor: "pointer" }}>
           <div className="rounded-full bg-ink-900 text-accent flex items-center justify-center font-bold" style={{ width: 56, height: 56, fontSize: 22 }}>
             {user?.first_name?.[0] ?? "?"}
           </div>
@@ -71,6 +71,7 @@ export function ProfilePage() {
             <div className="body-sm text-ink-500">{user?.phone_number}</div>
             {user?.email && <div className="body-sm text-ink-400">{user.email}</div>}
           </div>
+          <ChevronRight size={18} className="text-ink-300 shrink-0" />
         </div>
 
         {/* Sections */}

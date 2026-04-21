@@ -38,14 +38,16 @@ class SendCodeRequest(BaseModel):
 
 class SendCodeResponse(BaseModel):
     sent: bool = True
+    is_new_user: bool = True
+    dev_code: str | None = None  # only in dev mode
 
 
 class RegisterVerifyRequest(BaseModel):
     phone_number: str
     code: str
-    first_name: str
+    first_name: str | None = None
     email: str | None = None
-    consent: bool
+    consent: bool = False
 
 
 class LoginVerifyRequest(BaseModel):
@@ -76,6 +78,7 @@ class AuthResponse(BaseModel):
 async def register_send_code(
     body: SendCodeRequest,
     redis: aioredis.Redis = Depends(_get_redis),
+    session: AsyncSession = Depends(get_session),
 ) -> SendCodeResponse:
     code = generate_code()
     await redis.set(f"{SMS_CODE_PREFIX}{body.phone_number}", code, ex=SMS_CODE_TTL)
@@ -83,7 +86,15 @@ async def register_send_code(
     provider = get_sms_provider()
     await provider.send(body.phone_number, f"Делифон: ваш код {code}")
 
-    return SendCodeResponse()
+    # Check if user exists
+    result = await session.execute(
+        select(User).where(User.phone_number == body.phone_number)
+    )
+    existing = result.scalars().first()
+
+    # In dev mode, return code in response so frontend can show it
+    dev_code = code if settings.ENV in ("local", "dev") else None
+    return SendCodeResponse(is_new_user=existing is None, dev_code=dev_code)
 
 
 @router.post("/register/verify", response_model=AuthResponse)
@@ -92,9 +103,6 @@ async def register_verify(
     redis: aioredis.Redis = Depends(_get_redis),
     session: AsyncSession = Depends(get_session),
 ) -> AuthResponse:
-    if not body.consent:
-        raise HTTPException(422, "consent is required")
-
     stored_code = await redis.get(f"{SMS_CODE_PREFIX}{body.phone_number}")
     if stored_code is None or stored_code != body.code:
         raise HTTPException(401, "invalid or expired code")
@@ -107,16 +115,16 @@ async def register_verify(
     user = result.scalars().first()
 
     if user is None:
+        # New user — first_name required
+        if not body.first_name:
+            raise HTTPException(422, "first_name is required for new users")
         user = User(
             phone_number=body.phone_number,
-            first_name=body.first_name,
+            first_name=body.first_name or "Клиент",
             email=body.email,
         )
         session.add(user)
         await session.flush()
-    else:
-        # Existing user — treat as login
-        pass
 
     await session.commit()
 

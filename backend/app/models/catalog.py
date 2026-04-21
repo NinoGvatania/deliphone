@@ -87,6 +87,7 @@ class Device(Base):
     mdm_policy_name: Mapped[str | None] = mapped_column(String(100))
     mdm_last_sync: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     mdm_compliance: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown", server_default="unknown")
+    battery_level: Mapped[int | None] = mapped_column(Integer)
 
     status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
     created_at: Mapped[datetime] = mapped_column(

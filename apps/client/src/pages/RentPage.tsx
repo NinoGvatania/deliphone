@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button, Card, Badge, Spinner } from "@deliphone/ui";
-import { ArrowLeft, MapPin, Shield, Star, Check, Smartphone } from "lucide-react";
+import { ArrowLeft, MapPin, Shield, Star, Smartphone, Battery, BatteryLow, BatteryMedium, BatteryFull, BatteryCharging } from "lucide-react";
 import { locationsApi, type DeviceBrief } from "@/api/locations";
 import { rentalsApi } from "@/api/rentals";
 import { paymentsApi } from "@/api/payments";
@@ -86,30 +86,42 @@ export function RentPage() {
               </Card>
             )}
 
-            {devices.map((d) => (
-              <Card
-                key={d.id}
-                variant={selected?.id === d.id ? "elevated" : "outlined"}
-                padding={16}
-                onClick={() => setSelected(d)}
-              >
-                <div className="flex items-center gap-12">
-                  <div
-                    className="flex items-center justify-center shrink-0 bg-ink-100"
-                    style={{ width: 48, height: 48, borderRadius: 12 }}
-                  >
-                    <Smartphone size={22} className="text-ink-500" />
+            {devices.map((d) => {
+              const isSelected = selected?.id === d.id;
+              return (
+                <div
+                  key={d.id}
+                  onClick={() => setSelected(d)}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    border: isSelected ? "2px solid #D6FF3D" : "1px solid #E3E3DF",
+                    background: isSelected ? "rgba(214,255,61,0.08)" : "#fff",
+                    cursor: "pointer",
+                    transition: "all 150ms",
+                  }}
+                >
+                  <div className="flex items-center gap-12">
+                    <div
+                      className="flex items-center justify-center shrink-0"
+                      style={{
+                        width: 48, height: 48, borderRadius: 12,
+                        background: isSelected ? "rgba(214,255,61,0.2)" : "#EFEFED",
+                      }}
+                    >
+                      <Smartphone size={22} style={{ color: isSelected ? "#0F1410" : "#6B6B65" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="body font-semibold m-0">{d.model}</p>
+                      <p className="caption text-ink-500 m-0">
+                        {[d.color, d.storage].filter(Boolean).join(" · ")} · #{d.short_code}
+                      </p>
+                    </div>
+                    <BatteryIndicator level={d.battery_level} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="body font-semibold m-0">{d.model}</p>
-                    <p className="caption text-ink-500 m-0">
-                      {[d.color, d.storage].filter(Boolean).join(" · ")} · #{d.short_code}
-                    </p>
-                  </div>
-                  {selected?.id === d.id && <Check size={20} className="text-accent-ink" />}
                 </div>
-              </Card>
-            ))}
+              );
+            })}
 
             <Button
               variant="primary" size="lg" fullWidth
@@ -219,6 +231,22 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
     <div className="flex justify-between items-center">
       <span className="body-sm text-ink-500">{label}</span>
       <span className={bold ? "body font-semibold" : "body-sm"}>{value}</span>
+    </div>
+  );
+}
+
+function BatteryIndicator({ level }: { level: number | null }) {
+  if (level == null) return null;
+
+  const color = level > 60 ? "#1E8E4F" : level > 20 ? "#B8730A" : "#D2342A";
+  const Ico = level > 80 ? BatteryFull : level > 40 ? BatteryMedium : level > 15 ? BatteryLow : Battery;
+
+  return (
+    <div className="flex items-center gap-4 shrink-0">
+      <Ico size={20} style={{ color }} />
+      <span className="caption font-medium" style={{ color, minWidth: 28, textAlign: "right" }}>
+        {level}%
+      </span>
     </div>
   );
 }

@@ -35,6 +35,7 @@ class DeviceBrief(BaseModel):
     color: str | None = None
     storage: str
     condition_grade: int | None = None
+    battery_level: int | None = None
 
     model_config = {"from_attributes": True}
 

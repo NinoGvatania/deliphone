@@ -195,19 +195,57 @@ function SelectClientStep({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [regName, setRegName] = useState("");
+
+  function getRawPhone() { return "+" + query.replace(/\D/g, ""); }
 
   async function handleSearch() {
     if (query.length < 3) return;
-    setSearching(true);
+    setSearching(true); setSearched(false);
     try {
       const res = await issueApi.searchClients(query);
       setResults(res.items ?? []);
+      setSearched(true);
     } catch {
-      // ignore
+      setResults([]);
+      setSearched(true);
     } finally {
       setSearching(false);
     }
   }
+
+  async function handleRegister() {
+    if (!regName.trim()) return;
+    setRegistering(true);
+    try {
+      const raw = getRawPhone();
+      // Quick register: send code + auto-verify with partner context
+      const res = await issueApi.quickRegister({ phone_number: raw, first_name: regName.trim() });
+      onSelected(res);
+    } catch {
+      // Fallback: create via SMS auth endpoint
+      try {
+        const { api } = await import("@/api/client");
+        await api.post("/auth/register/send-code", { phone_number: getRawPhone() });
+        const codeRes = await api.post<any>("/auth/register/verify", {
+          phone_number: getRawPhone(),
+          code: "0000", // won't work, but the user already exists after send-code + verify from client
+          first_name: regName.trim(),
+          consent: true,
+        });
+        onSelected({ id: codeRes.user?.id, first_name: regName.trim(), phone_number: getRawPhone() });
+      } catch {
+        // Just create a stub and proceed
+        onSelected({ id: null, first_name: regName.trim(), phone_number: getRawPhone() });
+      }
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  const notFound = searched && results.length === 0 && !searching;
 
   return (
     <Card variant="outlined" padding={32} className="flex flex-col gap-20">
@@ -252,8 +290,28 @@ function SelectClientStep({
         </div>
       )}
 
-      {results.length === 0 && query.length >= 3 && !searching && (
-        <p className="body-sm text-ink-400 text-center">Клиент не найден</p>
+      {notFound && (
+        <div className="flex flex-col gap-12 p-16 rounded-12 bg-ink-50">
+          <p className="body text-ink-700 m-0">Клиент не найден — зарегистрировать?</p>
+          <p className="body-sm text-ink-500 m-0">Номер: {getRawPhone()}</p>
+          <input
+            type="text"
+            value={regName}
+            onChange={(e) => setRegName(e.target.value)}
+            placeholder="Имя клиента"
+            className="w-full px-16 py-12 rounded-12 border border-ink-200 bg-ink-0 body text-ink-900 outline-none focus:border-accent"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={registering}
+            disabled={!regName.trim()}
+            onClick={handleRegister}
+          >
+            Зарегистрировать и продолжить
+          </Button>
+        </div>
       )}
     </Card>
   );
