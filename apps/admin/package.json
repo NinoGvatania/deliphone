@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.1",
+    "qrcode": "^1.5.4",
     "@deliphone/shared-types": "workspace:*",
     "@deliphone/ui": "workspace:*",
     "@tanstack/react-query": "^5.59.20",

@@ -74,6 +74,11 @@ async def create_device(
     session: AsyncSession = Depends(get_session),
 ) -> DeviceDetail:
     import hashlib
+    # Check IMEI uniqueness
+    existing = await session.execute(select(Device).where(Device.imei == body.imei))
+    if existing.scalars().first():
+        raise HTTPException(409, f"Устройство с IMEI {body.imei} уже существует")
+
     short_code = body.short_code or hashlib.md5(body.imei.encode()).hexdigest()[:6].upper()
 
     device = Device(

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -491,23 +491,15 @@ export function DevicesPage() {
             <>
               <p style={{ marginBottom: 16 }}>Отсканируйте камерой нового устройства при первой настройке:</p>
               {enrollMut.data.qr_code ? (
-                <img
-                  src={`data:image/png;base64,${enrollMut.data.qr_code}`}
-                  alt="Enrollment QR"
-                  style={{ width: 250, height: 250, margin: "0 auto" }}
-                />
-              ) : enrollMut.data.token ? (
                 <>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(enrollMut.data.token)}`}
-                    alt="Enrollment QR"
-                    style={{ width: 250, height: 250, margin: "0 auto" }}
-                  />
-                  <div style={{ marginTop: 12 }}>
-                    <Text copyable={{ text: enrollMut.data.token }} type="secondary" style={{ fontSize: 11 }}>
-                      Токен: {enrollMut.data.token.slice(0, 20)}...
-                    </Text>
-                  </div>
+                  <QrCanvas data={enrollMut.data.qr_code} size={250} />
+                  {enrollMut.data.token && (
+                    <div style={{ marginTop: 12, textAlign: "center" }}>
+                      <Text copyable={{ text: enrollMut.data.token }} type="secondary" style={{ fontSize: 11 }}>
+                        Токен: {enrollMut.data.token}
+                      </Text>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div
@@ -640,11 +632,7 @@ function AddDeviceModal({ open, onClose, onCreated }: { open: boolean; onClose: 
                     style={{ width: 200, height: 200, margin: "0 auto", display: "block" }}
                   />
                 ) : enrollMut.data.token ? (
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(enrollMut.data.token)}`}
-                    alt="MDM QR"
-                    style={{ width: 200, height: 200, margin: "0 auto", display: "block" }}
-                  />
+                  <QrCanvas data={enrollMut.data.token} size={200} />
                 ) : (
                   <Text type="warning">Токен не получен</Text>
                 )}
@@ -705,4 +693,19 @@ function AddDeviceModal({ open, onClose, onCreated }: { open: boolean; onClose: 
       </div>
     </Modal>
   );
+}
+
+function QrCanvas({ data, size = 250 }: { data: string; size?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!data || !canvasRef.current) return;
+    import("qrcode").then((QRCode) => {
+      QRCode.toCanvas(canvasRef.current, data, { width: size, margin: 2 }, (err: any) => {
+        if (err) console.error("QR render error:", err);
+      });
+    });
+  }, [data, size]);
+
+  return <canvas ref={canvasRef} style={{ display: "block", margin: "0 auto" }} />;
 }

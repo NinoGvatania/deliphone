@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from app.services.android_mdm import get_mdm_client
 
-router = APIRouter(prefix="/mdm", tags=["admin-mdm"])
+router = APIRouter(tags=["admin-mdm"])
 
 
 class EnrollRequest(BaseModel):
@@ -41,7 +41,6 @@ class HealthResponse(BaseModel):
 
 @router.post("/devices/{device_id}/mdm/enroll", response_model=EnrollResponse)
 async def create_enrollment_token(device_id: str, body: EnrollRequest):
-    """Create enrollment token for a device."""
     client = get_mdm_client()
     try:
         result = await client.create_enrollment_token(body.policy_id, body.duration)
@@ -56,19 +55,18 @@ async def create_enrollment_token(device_id: str, body: EnrollRequest):
 
 @router.post("/devices/{device_id}/mdm/command", response_model=CommandResponse)
 async def issue_device_command(device_id: str, body: CommandRequest):
-    """Issue a command to an enrolled device (lock/reboot/reset_password)."""
     from sqlalchemy import select
-
-    from app.core.db import get_session
+    from app.core.db import _get_session_factory
     from app.models.catalog import Device
 
-    async with get_session() as session:
+    factory = _get_session_factory()
+    async with factory() as session:
         result = await session.execute(select(Device).where(Device.id == device_id))
         device = result.scalars().first()
         if not device:
-            raise HTTPException(status_code=404, detail="Device not found")
+            raise HTTPException(404, "Device not found")
         if not device.mdm_device_name:
-            raise HTTPException(status_code=400, detail="Device not enrolled in MDM")
+            raise HTTPException(400, "Device not enrolled in MDM")
 
         client = get_mdm_client()
         try:
@@ -79,64 +77,61 @@ async def issue_device_command(device_id: str, body: CommandRequest):
             elif body.command == "reset_password":
                 resp = await client.reset_password(device.mdm_device_name)
             else:
-                raise HTTPException(status_code=400, detail="Unknown command")
+                raise HTTPException(400, "Unknown command")
             return CommandResponse(status="ok", result=resp)
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"MDM API error: {e}")
+            raise HTTPException(502, f"MDM API error: {e}")
 
 
 @router.post("/devices/{device_id}/mdm/wipe", response_model=CommandResponse)
 async def wipe_device(device_id: str):
-    """Factory reset a device. Dangerous — requires admin confirmation in UI."""
     from sqlalchemy import select
-
-    from app.core.db import get_session
+    from app.core.db import _get_session_factory
     from app.models.catalog import Device
 
-    async with get_session() as session:
+    factory = _get_session_factory()
+    async with factory() as session:
         result = await session.execute(select(Device).where(Device.id == device_id))
         device = result.scalars().first()
         if not device:
-            raise HTTPException(status_code=404, detail="Device not found")
+            raise HTTPException(404, "Device not found")
         if not device.mdm_device_name:
-            raise HTTPException(status_code=400, detail="Device not enrolled in MDM")
+            raise HTTPException(400, "Device not enrolled in MDM")
 
         client = get_mdm_client()
         try:
             resp = await client.wipe_device(device.mdm_device_name)
             return CommandResponse(status="ok", result=resp)
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"MDM API error: {e}")
+            raise HTTPException(502, f"MDM API error: {e}")
 
 
 @router.get("/devices/{device_id}/mdm/status")
 async def get_device_mdm_status(device_id: str):
-    """Get MDM status for an enrolled device."""
     from sqlalchemy import select
-
-    from app.core.db import get_session
+    from app.core.db import _get_session_factory
     from app.models.catalog import Device
 
-    async with get_session() as session:
+    factory = _get_session_factory()
+    async with factory() as session:
         result = await session.execute(select(Device).where(Device.id == device_id))
         device = result.scalars().first()
         if not device:
-            raise HTTPException(status_code=404, detail="Device not found")
+            raise HTTPException(404, "Device not found")
         if not device.mdm_device_name:
-            raise HTTPException(status_code=400, detail="Device not enrolled in MDM")
+            return {"enrolled": False}
 
         client = get_mdm_client()
         try:
             return await client.get_device(device.mdm_device_name)
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"MDM API error: {e}")
+            raise HTTPException(502, f"MDM API error: {e}")
 
 
 @router.get("/mdm/health", response_model=HealthResponse)
 async def mdm_health():
-    """Check MDM API connectivity."""
     client = get_mdm_client()
     result = await client.health_check()
     return HealthResponse(**result)
