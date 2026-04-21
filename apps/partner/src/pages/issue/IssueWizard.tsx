@@ -13,6 +13,7 @@ import { Button, Card, Spinner, Logo, AppHeader } from "@deliphone/ui";
 import { issueApi } from "@/api/partner";
 import SignatureCanvas from "react-signature-canvas";
 import { QrScanner } from "@/components/QrScanner";
+import { PhoneInput } from "@/components/PhoneInput";
 
 type Step =
   | "select-client"
@@ -192,20 +193,21 @@ function SelectClientStep({
   onSelected: (client: any) => void;
   loading: boolean;
 }) {
-  const [query, setQuery] = useState("");
+  const [rawPhone, setRawPhone] = useState("+7");
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [regName, setRegName] = useState("");
 
-  function getRawPhone() { return "+" + query.replace(/\D/g, ""); }
+  function getRawPhone() { return rawPhone; }
 
-  async function handleSearch() {
-    if (query.length < 3) return;
+  async function handleSearch(phone?: string) {
+    const q = phone || rawPhone;
+    if (q.length < 11) return;
     setSearching(true); setSearched(false);
     try {
-      const res = await issueApi.searchClients(query);
+      const res = await issueApi.searchClients(q);
       setResults(res.items ?? []);
       setSearched(true);
     } catch {
@@ -213,6 +215,16 @@ function SelectClientStep({
       setSearched(true);
     } finally {
       setSearching(false);
+    }
+  }
+
+  function handlePhoneChange(phone: string) {
+    setRawPhone(phone);
+    setSearched(false);
+    setResults([]);
+    // Auto-search when phone is full (11+ digits including country code)
+    if (phone.replace(/\D/g, "").length >= 11) {
+      handleSearch(phone);
     }
   }
 
@@ -245,30 +257,20 @@ function SelectClientStep({
     }
   }
 
-  const notFound = searched && results.length === 0 && !searching;
+  const notFound = searched && results.length === 0 && !searching && rawPhone.length >= 11;
 
   return (
     <Card variant="outlined" padding={32} className="flex flex-col gap-20">
-      <p className="body text-ink-700">Найдите клиента по номеру телефона</p>
+      <p className="body text-ink-700">Введите номер телефона клиента</p>
 
-      <div className="flex gap-12">
-        <input
-          type="tel"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="+7 (900) 123-45-67"
-          className="flex-1 px-16 py-12 rounded-12 border border-ink-200 bg-ink-0 body text-ink-900 outline-none focus:border-accent"
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-        />
-        <Button
-          variant="primary"
-          icon={Search}
-          onClick={handleSearch}
-          loading={searching}
-        >
-          Найти
-        </Button>
-      </div>
+      <PhoneInput value={rawPhone} onChange={handlePhoneChange} className="w-full" />
+
+      {searching && (
+        <div className="flex items-center gap-8 justify-center">
+          <Spinner size={16} />
+          <span className="body-sm text-ink-400">Ищем...</span>
+        </div>
+      )}
 
       {results.length > 0 && (
         <div className="flex flex-col gap-8">

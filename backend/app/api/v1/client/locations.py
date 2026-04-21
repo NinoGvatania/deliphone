@@ -189,6 +189,7 @@ async def list_available_devices(
             color=d.color,
             storage=d.storage,
             condition_grade=d.condition_grade,
+            battery_level=d.battery_level,
         )
         for d in devices
     ]
