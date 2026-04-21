@@ -73,11 +73,14 @@ async def create_device(
     admin: AdminUser = Depends(require_admin_role("manager", "admin")),
     session: AsyncSession = Depends(get_session),
 ) -> DeviceDetail:
+    import hashlib
+    short_code = body.short_code or hashlib.md5(body.imei.encode()).hexdigest()[:6].upper()
+
     device = Device(
         imei=body.imei,
         model=body.model,
         serial_number=body.serial_number,
-        short_code=body.short_code,
+        short_code=short_code,
         color=body.color,
         storage=body.storage,
         condition_grade=body.condition_grade,
@@ -241,3 +244,22 @@ async def write_off_device(
     ))
     await session.commit()
     return {"status": "written_off"}
+
+
+@router.get("/{device_id}/qr-label")
+async def get_device_qr_label(
+    device_id: uuid.UUID,
+    admin: AdminUser = Depends(require_admin_role("manager", "admin")),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalars().first()
+    if not device:
+        raise HTTPException(404, "device not found")
+    return {
+        "short_code": device.short_code,
+        "imei": device.imei,
+        "model": device.model,
+        "qr_url": f"https://app.comnapp.ru/d/{device.short_code}",
+        "qr_image": f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://app.comnapp.ru/d/{device.short_code}",
+    }
