@@ -50,6 +50,7 @@ async def list_inventory(
                 model=d.model,
                 short_code=d.short_code,
                 custody=d.current_custody,
+                battery_level=d.battery_level,
                 days_on_point=days,
             )
         )

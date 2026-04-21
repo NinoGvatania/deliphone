@@ -155,6 +155,7 @@ class DeviceListItem(BaseModel):
     current_location_id: UUID | None = None
     status: str
     total_rentals: int = 0
+    battery_level: int | None = None
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScanLine } from "lucide-react";
+import { Battery, BatteryFull, BatteryLow, BatteryMedium, ScanLine } from "lucide-react";
 import { Badge, Button, Card, Spinner } from "@deliphone/ui";
 import { inventoryApi } from "@/api/partner";
 
@@ -7,24 +7,38 @@ type Device = {
   id: string;
   model: string;
   imei: string;
+  short_code: string;
   serial_number: string;
   status: string;
+  battery_level: number | null;
   assigned_to: string | null;
 };
 
 const STATUS_VARIANTS: Record<string, "success" | "warning" | "danger" | "info"> = {
-  free: "success",
-  rented: "info",
-  maintenance: "warning",
-  blocked: "danger",
+  free: "success", location: "success",
+  rented: "info", with_client: "info",
+  maintenance: "warning", in_service: "warning",
+  blocked: "danger", missing: "danger",
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  free: "Свободен",
-  rented: "В аренде",
-  maintenance: "Обслуживание",
-  blocked: "Заблокирован",
+  free: "Свободен", location: "Свободен",
+  rented: "В аренде", with_client: "В аренде",
+  maintenance: "Обслуживание", in_service: "В сервисе",
+  blocked: "Заблокирован", missing: "Утрачен",
 };
+
+function BatteryIcon({ level }: { level: number | null }) {
+  if (level == null) return <span className="caption text-ink-300">—</span>;
+  const color = level > 60 ? "#1E8E4F" : level > 20 ? "#B8730A" : "#D2342A";
+  const Ico = level > 80 ? BatteryFull : level > 40 ? BatteryMedium : level > 15 ? BatteryLow : Battery;
+  return (
+    <span className="inline-flex items-center gap-4">
+      <Ico size={18} style={{ color }} />
+      <span className="caption font-medium" style={{ color }}>{level}%</span>
+    </span>
+  );
+}
 
 export function InventoryPage() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -70,29 +84,26 @@ export function InventoryPage() {
             <thead>
               <tr className="border-b border-ink-200">
                 <th className="text-left body-sm text-ink-500 py-12 px-8">Модель</th>
+                <th className="text-left body-sm text-ink-500 py-12 px-8">Код</th>
                 <th className="text-left body-sm text-ink-500 py-12 px-8">IMEI</th>
-                <th className="text-left body-sm text-ink-500 py-12 px-8">Серийный номер</th>
+                <th className="text-left body-sm text-ink-500 py-12 px-8">Заряд</th>
                 <th className="text-left body-sm text-ink-500 py-12 px-8">Статус</th>
                 <th className="text-left body-sm text-ink-500 py-12 px-8">Арендатор</th>
               </tr>
             </thead>
             <tbody>
               {devices.map((d) => (
-                <tr key={d.id} className="border-b border-ink-100">
+                <tr key={d.id} className="border-b border-ink-100 hover:bg-ink-50 transition-colors">
                   <td className="body text-ink-900 py-12 px-8">{d.model}</td>
-                  <td className="mono text-ink-700 py-12 px-8">{d.imei}</td>
-                  <td className="mono text-ink-700 py-12 px-8">{d.serial_number}</td>
+                  <td className="mono text-ink-700 py-12 px-8">#{d.short_code || "—"}</td>
+                  <td className="mono text-ink-500 py-12 px-8">{d.imei?.slice(-4) || "—"}</td>
+                  <td className="py-12 px-8"><BatteryIcon level={d.battery_level} /></td>
                   <td className="py-12 px-8">
-                    <Badge
-                      variant={STATUS_VARIANTS[d.status] ?? "info"}
-                      size="sm"
-                    >
+                    <Badge variant={STATUS_VARIANTS[d.status] ?? "info"} size="sm">
                       {STATUS_LABELS[d.status] ?? d.status}
                     </Badge>
                   </td>
-                  <td className="body-sm text-ink-500 py-12 px-8">
-                    {d.assigned_to ?? "\u2014"}
-                  </td>
+                  <td className="body-sm text-ink-500 py-12 px-8">{d.assigned_to ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

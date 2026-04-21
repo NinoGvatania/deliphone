@@ -15,7 +15,7 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { Lock, Plus, Power, QrCode, RotateCcw, Trash2 } from "lucide-react";
+import { Battery, BatteryFull, BatteryLow, BatteryMedium, Lock, Plus, Power, QrCode, RotateCcw, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
@@ -30,6 +30,7 @@ type Device = {
   location: string;
   status: string;
   total_rentals: number;
+  battery_level: number | null;
   photos: string[];
   specs: Record<string, string>;
   movements: { date: string; from: string; to: string; reason: string }[];
@@ -121,6 +122,22 @@ export function DevicesPage() {
       render: (s: string) => <Tag color={STATUS_COLORS[s] ?? "default"}>{s}</Tag>,
     },
     { title: "Аренды", dataIndex: "total_rentals", width: 80 },
+    {
+      title: "Заряд",
+      dataIndex: "battery_level",
+      width: 90,
+      render: (v: number | null) => {
+        if (v == null) return <Text type="secondary">—</Text>;
+        const color = v > 60 ? "#1E8E4F" : v > 20 ? "#B8730A" : "#D2342A";
+        const Ico = v > 80 ? BatteryFull : v > 40 ? BatteryMedium : v > 15 ? BatteryLow : Battery;
+        return (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Ico size={16} style={{ color }} />
+            <span style={{ color, fontSize: 12, fontWeight: 500 }}>{v}%</span>
+          </span>
+        );
+      },
+    },
   ];
 
   return (

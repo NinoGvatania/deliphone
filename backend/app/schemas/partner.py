@@ -94,6 +94,7 @@ class InventoryDeviceBrief(BaseModel):
     model: str
     short_code: str
     custody: str | None = None
+    battery_level: int | None = None
     days_on_point: int = 0
 
     model_config = {"from_attributes": True}
