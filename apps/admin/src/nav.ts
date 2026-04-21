@@ -4,6 +4,7 @@ import {
   AlertOctagon,
   BarChart3,
   Boxes,
+  HeadphonesIcon,
   ClipboardList,
   Clock,
   FileSearch,
@@ -16,7 +17,6 @@ import {
   ShieldCheck,
   Smartphone,
   Truck,
-  UserCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -36,7 +36,6 @@ export type NavItem = {
 
 export const NAV: readonly NavItem[] = [
   { key: "dashboard",    label: "Дашборд",         icon: LayoutDashboard, path: "/dashboard" },
-  { key: "kyc",          label: "Модерация KYC",   icon: UserCheck,       path: "/kyc" },
   { key: "users",        label: "Клиенты",         icon: Users,           path: "/users" },
   { key: "devices",      label: "Устройства",      icon: Smartphone,      path: "/devices" },
   { key: "rentals",      label: "Аренды",          icon: Clock,           path: "/rentals" },
@@ -49,6 +48,7 @@ export const NAV: readonly NavItem[] = [
   { key: "finance",      label: "Финансы",         icon: Wallet,          path: "/finance" },
   { key: "settings",     label: "Настройки",       icon: Settings,        path: "/settings" },
   { key: "audit-log",    label: "Audit log",       icon: ScrollText,      path: "/audit-log" },
+  { key: "support",      label: "Поддержка",       icon: HeadphonesIcon,  path: "/support" },
   { key: "analytics",    label: "Аналитика",       icon: BarChart3,       path: "/analytics" },
 ] as const;
 

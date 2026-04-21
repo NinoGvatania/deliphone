@@ -10,7 +10,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": true,
-    "noEmit": true
+    "composite": true,
+    "noEmit": false,
+    "outDir": "dist",
+    "declarationDir": "dist"
   },
   "include": ["src/**/*"]
 }

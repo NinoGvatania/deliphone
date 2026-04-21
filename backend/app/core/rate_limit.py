@@ -19,10 +19,10 @@ async def _check_rate(redis: aioredis.Redis, key: str, limit: int, window_sec: i
         raise HTTPException(429, "too many requests")
 
 # Dependencies for each auth endpoint:
-async def rate_limit_telegram_auth(request: Request, redis=Depends(get_redis)):
+async def rate_limit_sms_send(request: Request, redis=Depends(get_redis)):
     ip = request.client.host if request.client else "unknown"
     bucket = int(time.time() // 60)
-    await _check_rate(redis, f"rl:tg_auth:{ip}:{bucket}", 10)
+    await _check_rate(redis, f"rl:sms_send:{ip}:{bucket}", 5)
 
 async def rate_limit_partner_login(request: Request, redis=Depends(get_redis)):
     # rate limit by IP since we don't have email yet in dependency

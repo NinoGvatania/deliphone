@@ -34,7 +34,7 @@ async def get_current_client(
         raise HTTPException(403, "client role required")
     result = await session.execute(select(User).where(User.id == payload["sub"]))
     user = result.scalars().first()
-    if not user or user.status == "blocked":
+    if not user or user.is_blocked or user.is_deleted:
         raise HTTPException(403, "account blocked or not found")
     return user
 

@@ -51,13 +51,13 @@ class Settings(BaseSettings):
     JWT_REFRESH_TTL_DAYS: int = 30
     JWT_TEMP_TTL_MINUTES: int = 5
 
-    # --- Telegram bot ---
+    # --- SMS ---
+    SMS_PROVIDER: str = "dev"
+
+    # --- Telegram bot (notifications only) ---
     TG_BOT_TOKEN: str = ""
     TG_BOT_USERNAME: str = ""
     TG_BOT_DRY_RUN: bool = True
-
-    # --- KYC encryption (32-byte base64 key) ---
-    KYC_ENCRYPTION_KEY: str = ""
 
     # --- CORS ---
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175"
@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
+    # --- Google Android Management (MDM) ---
+    GOOGLE_MDM_PROJECT_ID: str = ""
+    GOOGLE_MDM_ENTERPRISE_ID: str = ""
+    GOOGLE_MDM_SERVICE_ACCOUNT_JSON_PATH: str = ""
+    GOOGLE_MDM_DEFAULT_POLICY_NAME: str = "normal_policy"
+
     # --- external providers (blank until wired in later phases) ---
     YOOKASSA_SHOP_ID: str = ""
     YOOKASSA_SECRET_KEY: str = ""
@@ -73,6 +79,9 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str = ""
     VAPID_PRIVATE_KEY: str = ""
     VAPID_SUBJECT: str = Field(default="mailto:admin@deliphone.local")
+
+    # --- receipts (54-FZ) ---
+    RECEIPT_EMAIL_DOMAIN: str = "receipts.deliphone.ru"
 
 
 @lru_cache(maxsize=1)

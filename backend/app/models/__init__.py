@@ -2,7 +2,7 @@
 
 from app.core.db import Base
 from app.models.admin import AdminUser
-from app.models.catalog import DamagePricing, Device, DeviceMovement, Tariff
+from app.models.catalog import Device, DeviceMovement, Tariff
 from app.models.enums import (
     AdminRole,
     DebtStatus,
@@ -11,7 +11,6 @@ from app.models.enums import (
     DeviceStatus,
     IncidentReporter,
     InventoryAuditStatus,
-    KycStatus,
     NotificationChannel,
     PartnerLocationStatus,
     PartnerPayoutStatus,
@@ -38,7 +37,8 @@ from app.models.ops import (
 )
 from app.models.partners import Partner, PartnerLocation, PartnerUser, RegistrationSession
 from app.models.rentals import Incident, Payment, Rental
-from app.models.users import KycSubmission, PaymentMethod, Subscription, User
+from app.models.users import PaymentMethod, Subscription, User
+from app.models.webhooks import WebhookEvent
 
 __all__ = [
     "Base",
@@ -50,7 +50,6 @@ __all__ = [
     "DeviceStatus",
     "IncidentReporter",
     "InventoryAuditStatus",
-    "KycStatus",
     "NotificationChannel",
     "PartnerLocationStatus",
     "PartnerPayoutStatus",
@@ -69,13 +68,11 @@ __all__ = [
     "AdminUser",
     "AuditLog",
     "Blacklist",
-    "DamagePricing",
     "Debt",
     "Device",
     "DeviceMovement",
     "Incident",
     "InventoryAudit",
-    "KycSubmission",
     "Notification",
     "Partner",
     "PartnerLocation",
@@ -91,4 +88,5 @@ __all__ = [
     "SupportMessage",
     "Tariff",
     "User",
+    "WebhookEvent",
 ]

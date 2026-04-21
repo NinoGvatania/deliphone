@@ -54,6 +54,9 @@ migration: ## Create new migration: make migration name="add_users"
 seed: ## Load seed data (tariffs, test admin, partner)
 	$(COMPOSE) exec $(BACKEND_SVC) python -m app.cli.seed
 
+seed-demo: ## Load demo data (devices, clients, chats)
+	$(COMPOSE) exec $(BACKEND_SVC) python -m app.cli.seed_demo
+
 # -------- test / lint --------
 .PHONY: test test-backend test-frontend lint lint-backend lint-frontend format
 test: test-backend test-frontend ## Run all tests
@@ -75,6 +78,14 @@ lint-frontend: ## ESLint across workspaces
 format: ## Ruff + prettier where present
 	cd backend && uv run ruff format .
 	pnpm -r format --if-present
+
+# -------- MDM --------
+.PHONY: mdm-health seed-mdm-policies
+mdm-health: ## Check MDM connection
+	$(COMPOSE) exec $(BACKEND_SVC) python -c "import asyncio; from app.services.android_mdm import get_mdm_client; print(asyncio.run(get_mdm_client().health_check()))"
+
+seed-mdm-policies: ## Create/update MDM policies
+	$(COMPOSE) exec $(BACKEND_SVC) python -c "import asyncio; from app.services.mdm_policies import ensure_policies; print(asyncio.run(ensure_policies()))"
 
 # -------- shortcuts --------
 .PHONY: logs shell

@@ -9,6 +9,7 @@ authors = [{ name = "Deliphone" }]
 
 dependencies = [
     "fastapi>=0.115",
+    "python-multipart>=0.0.12",
     "uvicorn[standard]>=0.32",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
@@ -27,6 +28,7 @@ dependencies = [
     "pyotp>=2.9",
     "cryptography>=43",
     "email-validator>=2.2",
+    "google-auth>=2.35",
 ]
 
 [project.optional-dependencies]
