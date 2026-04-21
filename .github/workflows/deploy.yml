@@ -1,0 +1,66 @@
+name: Deploy to Timeweb
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build client
+        run: cd apps/client && npx vite build
+
+      - name: Build partner
+        run: cd apps/partner && npx vite build
+
+      - name: Build admin
+        run: cd apps/admin && npx vite build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${USER}@${HOST}"
+          SCP="scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -r"
+
+          # Ensure project dir exists
+          $SSH "mkdir -p /opt/deliphone/{nginx,backend,frontend/{client,partner,admin}}"
+
+          # Sync backend
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude=__pycache__ --exclude=.pytest_cache --exclude=venv \
+            backend/ ${USER}@${HOST}:/opt/deliphone/backend/
+
+          # Sync frontend builds
+          $SCP apps/client/dist/ ${USER}@${HOST}:/opt/deliphone/frontend/client/
+          $SCP apps/partner/dist/ ${USER}@${HOST}:/opt/deliphone/frontend/partner/
+          $SCP apps/admin/dist/ ${USER}@${HOST}:/opt/deliphone/frontend/admin/
+
+          # Sync configs
+          $SCP docker-compose.prod.yml ${USER}@${HOST}:/opt/deliphone/docker-compose.yml
+          $SCP nginx/nginx.prod.conf ${USER}@${HOST}:/opt/deliphone/nginx/nginx.conf
+
+          # Deploy
+          $SSH "cd /opt/deliphone && docker compose pull && docker compose up -d --build && docker compose exec -T backend alembic upgrade head"
